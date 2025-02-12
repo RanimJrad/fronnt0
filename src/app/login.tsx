@@ -1,24 +1,43 @@
-"use client"; 
+"use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation'; 
 import './components/styles/style.css';
-import { useNavigate } from 'react-router-dom';
-
 
 const Login: React.FC = () => {
-  const [username, setUsername] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const router = useRouter(); 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle sign-in logic
-    console.log("Logging in with", username, password);
     
-    // Créer une instance de useNavigate
-    const navigate = useNavigate();
-  
-    // Redirection vers la page Home après la soumission
-    navigate('/home111');
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        console.log("Login successful", data);
+
+        // Stocker le token dans le localStorage
+        localStorage.setItem('token', data.token);
+
+        // ✅ Rediriger avec useRouter au lieu de useNavigate
+        router.push('/dashbord');
+      } else {
+        console.error("Login failed", data.error);
+        alert("Erreur : " + (data.error || "Identifiants incorrects"));
+      }
+    } catch (error) {
+      console.error("Erreur de connexion", error);
+    }
   };
 
   return (
@@ -27,37 +46,23 @@ const Login: React.FC = () => {
         <div className="row justify-content-center">
           <div className="col-md-12 col-lg-10">
             <div className="wrap d-md-flex">
-            <div
-                className="img"
-                style={{
-                  backgroundImage: 'url(/Logo_maison_du_web.png )', // Chemin relatif à partir du dossier public
-                  
-                }}
-              ></div>
+              <div className="img" style={{ backgroundImage: 'url(/Logo_maison_du_web.png )' }}></div>
               <div className="login-wrap p-4 p-md-5">
-                <div className="d-flex">
-                  <div className="w-100">
-                    <h3 className="mb-4">Sign In</h3>
-                  </div>
-                </div>
+                <h3 className="mb-4">Sign In</h3>
                 <form className="signin-form" onSubmit={handleSubmit}>
                   <div className="form-group mb-3">
-                    <label className="label" htmlFor="name">
-                      Username
-                    </label>
+                    <label className="label" htmlFor="email">Email</label>
                     <input
-                      type="text"
+                      type="email"
                       className="form-control"
-                      placeholder="Username"
+                      placeholder="Email"
                       required
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
                   <div className="form-group mb-3">
-                    <label className="label" htmlFor="password">
-                      Password
-                    </label>
+                    <label className="label" htmlFor="password">Password</label>
                     <input
                       type="password"
                       className="form-control"
@@ -68,15 +73,9 @@ const Login: React.FC = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <button
-                      type="submit"
-                      className="form-control btn btn-primary rounded submit px-3"
-                    >
+                    <button type="submit" className="form-control btn btn-primary rounded submit px-3">
                       Sign In
                     </button>
-                  </div>
-                  <div className="form-group d-md-flex">
-                    
                   </div>
                 </form>
               </div>
