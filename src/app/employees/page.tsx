@@ -1,8 +1,9 @@
+"use client"
+
 import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardSidebar } from "../components/dashboard-sidebar"
 import { ReviewsTabs } from "../components/employee/employee-tabs"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { AddRecruiterForm } from "../components/employee/add-recruiter-form"
 
 export default function ReviewsPage() {
   return (
@@ -24,10 +25,7 @@ export default function ReviewsPage() {
                 <h1 className="text-3xl font-bold tracking-tight">Reviews</h1>
                 <p className="text-muted-foreground">Manage and track employee reviews</p>
               </div>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Ajouter un recruteur 
-              </Button>
+              <AddRecruiterForm />
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -39,4 +37,3 @@ export default function ReviewsPage() {
     </div>
   )
 }
-
