@@ -1,9 +1,9 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Pencil, Trash, Check } from "lucide-react"
+import { Eye, Pencil, Trash } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { UserDetailsDialog } from "./UserDetailsDialog" // Importer le composant UserDetailsDialog
 
 interface User {
   id: number
@@ -13,56 +13,166 @@ interface User {
   created_at: string
   departement: string
   numTel: string
-  poste:string
+  poste: string
+  adresse: string
+  image?: string
+  cv?: string
 }
 
-export function ReviewsTable() {
+export function ReviewsTable({ refresh }: { refresh: boolean }) {
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/users")
-      .then((response) => response.json())
-      .then((data) => setUsers(data))
-      .catch((error) => console.error("Erreur de récupération des utilisateurs", error))
-  }, [])
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        if (!token) {
+          setError("Vous devez être connecté pour voir les utilisateurs.")
+          return
+        }
+
+        const response = await fetch("http://127.0.0.1:8000/api/users", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            localStorage.removeItem("token")
+            router.push("/auth/login")
+            return
+          }
+          throw new Error("Erreur de récupération des utilisateurs")
+        }
+
+        const data = await response.json()
+        setUsers(data)
+        setError(null)
+      } catch (error) {
+        console.error("Erreur de récupération des utilisateurs:", error)
+        setError("Erreur lors du chargement des utilisateurs")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [refresh])
+
+  const deleteUser = async (userId: number) => {
+    const token = localStorage.getItem("token")
+    if (!token) {
+      setError("Vous devez être connecté pour supprimer un utilisateur.")
+      return
+    }
+
+    const confirmed = window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la suppression de l'utilisateur")
+      }
+
+      // Mettre à jour l'état pour supprimer l'utilisateur du tableau
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId))
+      alert("Utilisateur supprimé avec succès!")
+    } catch (error) {
+      setError("Erreur lors de la suppression de l'utilisateur.")
+    }
+  }
+
+  const handleViewDetails = (user: User) => {
+    setSelectedUser(user)
+    setIsDetailsOpen(true)
+  }
+
+  if (loading) return <div className="p-4 text-gray-600">Chargement...</div>
+  if (error) return <div className="p-4 text-red-500">{error}</div>
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nom</TableHead>
-          <TableHead>Prenom</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Departement</TableHead>
-          <TableHead>Poste</TableHead>
-          <TableHead>Telephone</TableHead>
-          <TableHead>Date d'inscription</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {users.map((user) => (
-          <TableRow key={user.id}>
-            <TableCell className="font-medium">{user.nom}</TableCell>
-            <TableCell className="font-medium">{user.prenom}</TableCell>
-            <TableCell>{user.email}</TableCell>
-            <TableCell>{user.departement}</TableCell>
-            <TableCell className="font-medium">{user.poste}</TableCell>
-            <TableCell className="font-medium">{user.numTel}</TableCell>
-            <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" size="icon">
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nom</TableHead>
+            <TableHead>Prénom</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Département</TableHead>
+            <TableHead>Poste</TableHead>
+            <TableHead>Téléphone</TableHead>
+            <TableHead>Date d'inscription</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {users.map((user) => (
+            <TableRow key={user.id}>
+              <TableCell>{user.nom}</TableCell>
+              <TableCell>{user.prenom}</TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>{user.departement}</TableCell>
+              <TableCell>{user.poste}</TableCell>
+              <TableCell>{user.numTel}</TableCell>
+              <TableCell>
+                {new Intl.DateTimeFormat("fr-FR").format(
+                  new Date(user.created_at)
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleViewDetails(user)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => router.push(`/employees/${user.id}/edit`)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => deleteUser(user.id)} // Suppression de l'utilisateur
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {/* Afficher le pop-up des détails si un utilisateur est sélectionné */}
+      {selectedUser && (
+        <UserDetailsDialog
+          user={selectedUser}
+          isOpen={isDetailsOpen}
+          onClose={() => setIsDetailsOpen(false)}
+        />
+      )}
+    </>
   )
 }

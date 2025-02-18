@@ -1,5 +1,6 @@
 "use client"
 
+import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Plus } from "lucide-react"
 
-export function AddRecruiterForm() {
+export function AddRecruiterForm({ onRecruiterAdded }: { onRecruiterAdded: () => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,11 +31,22 @@ export function AddRecruiterForm() {
     numTel: "",
     poste: "",
     adresse: "",
+    image: null as File | null,
+    cv: null as File | null,
   })
 
+  // Gestion des champs texte
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  // Gestion des fichiers
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, files } = e.target
+    if (files && files.length > 0) {
+      setFormData((prev) => ({ ...prev, [name]: files[0] })) // Stocke le fichier
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,12 +56,24 @@ export function AddRecruiterForm() {
     setSuccess(null)
 
     try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        setError("Vous devez être connecté pour ajouter un recruteur.")
+        return
+      }
+
+      // Ajouter "recruteur" comme rôle
+      const formDataToSend = new FormData()
+      Object.entries({...formData, role: "recruteur"}).forEach(([key, value]) => {
+        if (value) formDataToSend.append(key, value)
+      })
+
       const response = await fetch("http://127.0.0.1:8000/api/register", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: formDataToSend,
       })
 
       const data = await response.json()
@@ -63,8 +87,10 @@ export function AddRecruiterForm() {
       setTimeout(() => {
         setIsOpen(false)
         setSuccess(null)
+        onRecruiterAdded()
       }, 2000)
 
+      // Réinitialiser les champs
       setFormData({
         nom: "",
         prenom: "",
@@ -74,6 +100,8 @@ export function AddRecruiterForm() {
         numTel: "",
         poste: "",
         adresse: "",
+        image: null,
+        cv: null,
       })
     } catch (error) {
       setError("Erreur lors de l'ajout du recruteur.")
@@ -95,10 +123,9 @@ export function AddRecruiterForm() {
           <DialogTitle>Ajouter un recruteur</DialogTitle>
           <DialogDescription>Remplissez les informations du nouveau recruteur.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} encType="multipart/form-data">
           <div className="grid gap-4 py-4">
-            {[
-              { id: "nom", label: "Nom" },
+            {[{ id: "nom", label: "Nom" },
               { id: "prenom", label: "Prénom" },
               { id: "email", label: "Email", type: "email" },
               { id: "password", label: "Mot de passe", type: "password" },
@@ -122,9 +149,43 @@ export function AddRecruiterForm() {
                 />
               </div>
             ))}
+
+            {/* Champ pour l'image */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="image" className="text-right">
+                Image
+              </Label>
+              <Input
+                id="image"
+                name="image"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="col-span-3"
+                required
+              />
+            </div>
+
+            {/* Champ pour le CV */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="cv" className="text-right">
+                CV (PDF)
+              </Label>
+              <Input
+                id="cv"
+                name="cv"
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                className="col-span-3"
+                required
+              />
+            </div>
           </div>
+
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {success && <p className="text-green-500 text-sm">{success}</p>}
+
           <DialogFooter>
             <Button type="submit" disabled={loading}>
               {loading ? "Ajout en cours..." : "Ajouter le recruteur"}

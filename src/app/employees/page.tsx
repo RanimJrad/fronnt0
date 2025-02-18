@@ -1,11 +1,18 @@
 "use client"
 
+import { useState } from "react"
 import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardSidebar } from "../components/dashboard-sidebar"
 import { ReviewsTabs } from "../components/employee/employee-tabs"
 import { AddRecruiterForm } from "../components/employee/add-recruiter-form"
 
 export default function ReviewsPage() {
+  const [refreshTrigger, setRefreshTrigger] = useState(false)
+
+  const handleRecruiterAdded = () => {
+    setRefreshTrigger((prev) => !prev)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <DashboardHeader />
@@ -25,11 +32,11 @@ export default function ReviewsPage() {
                 <h1 className="text-3xl font-bold tracking-tight">Reviews</h1>
                 <p className="text-muted-foreground">Manage and track employee reviews</p>
               </div>
-              <AddRecruiterForm />
+              <AddRecruiterForm onRecruiterAdded={handleRecruiterAdded} />
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-              <ReviewsTabs />
+              <ReviewsTabs refreshTrigger={refreshTrigger} />
             </div>
           </div>
         </div>
@@ -37,3 +44,4 @@ export default function ReviewsPage() {
     </div>
   )
 }
+

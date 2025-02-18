@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ReviewsTable } from "./employee-table"
 
-export function ReviewsTabs() {
+export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
@@ -13,10 +13,9 @@ export function ReviewsTabs() {
         >
           Overview
         </TabsTrigger>
-        
       </TabsList>
       <TabsContent value="overview" className="p-6">
-        <ReviewsTable />
+        <ReviewsTable refresh={refreshTrigger} />
       </TabsContent>
     </Tabs>
   )
