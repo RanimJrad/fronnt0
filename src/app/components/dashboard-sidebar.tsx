@@ -5,7 +5,7 @@ import { Home, Users, Building2, Calendar, Briefcase, Star, BarChart, Settings, 
 const menuItems = [
   { icon: <Home className="h-4 w-4" />, label: "Dashboard", href: "/dashbord" },
   { icon: <Users className="h-4 w-4" />, label: "Employees", href: "/employees" },
-  { icon: <Building2 className="h-4 w-4" />, label: "Company", href: "/company" },
+  { icon: <Building2 className="h-4 w-4" />, label: "Archive", href: "/archive" },
   { icon: <Calendar className="h-4 w-4" />, label: "Calendar", href: "/calendar" },
   { icon: <Briefcase className="h-4 w-4" />, label: "Leave", href: "/leave" },
   { icon: <Star className="h-4 w-4" />, label: "Reviews", href: "/reviews" },

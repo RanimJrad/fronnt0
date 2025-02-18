@@ -19,7 +19,7 @@ interface User {
   numTel: string;
   poste: string;
   adresse: string;
-  image?: string;
+  image?: string; // URL complète de l'image envoyée par Laravel
   cv?: string;
 }
 
@@ -43,19 +43,23 @@ export function UserDetailsDialog({
           <DialogTitle>Détails du recruteur</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {/* Affichage de l'image du recruteur */}
           {user.image && (
             <div className="flex justify-center mb-4">
-              <div className="relative w-32 h-32 rounded-full overflow-hidden">
+              <div className="relative w-32 h-32 rounded-full overflow-hidden border">
                 <Image
-                  src={`http://127.0.0.1:8000/${user.image}`}
+                  src={user.image}
                   alt={`Photo de ${user.nom}`}
-                  fill
+                  width={128}
+                  height={128}
+                  unoptimized // Désactive l'optimisation Next.js
                   className="object-cover"
                 />
               </div>
             </div>
           )}
 
+          {/* Affichage des informations du recruteur */}
           {[
             { id: "nom", label: "Nom" },
             { id: "prenom", label: "Prénom" },
@@ -73,6 +77,7 @@ export function UserDetailsDialog({
             </div>
           ))}
 
+          {/* Date d'inscription */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right font-medium">Date d'inscription</Label>
             <div className="col-span-3 text-sm">
@@ -82,12 +87,13 @@ export function UserDetailsDialog({
             </div>
           </div>
 
+          {/* Lien pour télécharger le CV */}
           {user.cv && (
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right font-medium">CV</Label>
               <div className="col-span-3">
                 <a
-                  href={`http://127.0.0.1:8000/${user.cv}`}
+                  href={user.cv}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 text-sm"
