@@ -31,7 +31,13 @@ const Login: React.FC = () => {
       if (response.ok) {
         console.log("Login successful", data)
         localStorage.setItem("token", data.token)
-        router.push("/dashbord")
+
+        // Vérifier si l'email est celui de l'admin
+        if (email === "admin@gmail.com") {
+          router.push("/dashbord")  // Redirection pour l'admin
+        } else {
+          router.push("/dashbord_rec")  // Redirection pour les autres utilisateurs
+        }
       } else {
         console.error("Login failed", data.error)
         alert("Erreur : " + (data.error || "Identifiants incorrects"))
@@ -109,7 +115,7 @@ const Login: React.FC = () => {
                   type="submit"
                   className="w-full bg-[#2c4999] hover:bg-[#233a7a] text-white font-semibold py-3 rounded-lg transition-colors duration-200"
                 >
-                  Sign In
+                  Login
                 </Button>
               </form>
 
@@ -131,8 +137,6 @@ const Login: React.FC = () => {
                   <span>Login with LinkedIn</span>
                 </Button>
               </div>
-
-              
             </div>
           </div>
         </div>
@@ -141,4 +145,4 @@ const Login: React.FC = () => {
   )
 }
 
-export default Login
+export default Login  

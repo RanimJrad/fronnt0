@@ -2,7 +2,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ReviewsTable } from "./employee-table"
-import { ReviewTypesTable } from "./employee-types-table"
 
 export function ReviewsTabs() {
   return (
@@ -14,18 +13,10 @@ export function ReviewsTabs() {
         >
           Overview
         </TabsTrigger>
-        <TabsTrigger
-          value="types"
-          className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary"
-        >
-          Review Types
-        </TabsTrigger>
+        
       </TabsList>
       <TabsContent value="overview" className="p-6">
         <ReviewsTable />
-      </TabsContent>
-      <TabsContent value="types" className="p-6">
-        <ReviewTypesTable />
       </TabsContent>
     </Tabs>
   )

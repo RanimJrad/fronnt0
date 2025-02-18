@@ -7,9 +7,9 @@ import { TeamLeads } from "../components/team-leads"
 import { TodayActivities } from "../components/today-activities"
 import { RecentActivities } from "../components/recent-activities"
 import { UpcomingLeaves } from "../components/upcoming-leaves"
-import { WelcomeBanner } from "../components/welcome-banner"
+import { WelcomeBanner } from "../components/recruteur/welcome-banner_rec"
 import { QuickActions } from "../components/quick-actions"
-import { DashboardHeaderRec } from "../components/dashboard-header_rec"
+import { DashboardHeaderRec } from "../components/recruteur/dashboard-header_rec"
 
 export default function DashboardPage() {
   return (
