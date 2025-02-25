@@ -1,5 +1,4 @@
 import { Cake, Briefcase, Home, UserX } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const activities = [
   {
@@ -50,12 +49,7 @@ export function TodayActivities() {
             <div className="flex-1">
               <p className="text-sm">{activity.title}</p>
             </div>
-            {activity.user && (
-              <Avatar>
-                <AvatarImage src={activity.user.avatar} />
-                <AvatarFallback>{activity.user.name[0]}</AvatarFallback>
-              </Avatar>
-            )}
+           
           </div>
         ))}
       </div>

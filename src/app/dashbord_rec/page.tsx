@@ -1,6 +1,5 @@
 import { Card } from "@/components/ui/card"
 
-import { DashboardSidebar } from "../components/dashboard-sidebar"
 import { StatsCards } from "../components/stats-cards"
 import { DashboardCharts } from "../components/dashboard-charts"
 import { TeamLeads } from "../components/team-leads"
@@ -10,6 +9,7 @@ import { UpcomingLeaves } from "../components/upcoming-leaves"
 import { WelcomeBanner } from "../components/recruteur/welcome-banner_rec"
 import { QuickActions } from "../components/quick-actions"
 import { DashboardHeaderRec } from "../components/recruteur/dashboard-header_rec"
+import { DashboardSidebarRec } from "../components/recruteur/dashboard-sidebar_rec"
 
 export default function DashboardPage() {
   return (
@@ -20,7 +20,7 @@ export default function DashboardPage() {
           {/* Sidebar */}
           <div className="hidden md:block md:col-span-1 lg:col-span-1">
             <div className="sticky top-20">
-              <DashboardSidebar />
+              <DashboardSidebarRec />
             </div>
           </div>
 

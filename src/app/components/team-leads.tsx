@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const teamLeads = [
   {
@@ -45,10 +44,7 @@ export function TeamLeads() {
       <div className="space-y-4">
         {teamLeads.map((lead) => (
           <div key={lead.name} className="flex items-center gap-4">
-            <Avatar>
-              <AvatarImage src={lead.avatar} />
-              <AvatarFallback>{lead.name[0]}</AvatarFallback>
-            </Avatar>
+            
             <div>
               <p className="text-sm font-medium">{lead.name}</p>
               <p className="text-sm text-muted-foreground">{lead.role}</p>

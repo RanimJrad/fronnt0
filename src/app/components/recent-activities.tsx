@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const activities = [
   {
@@ -36,10 +35,7 @@ export function RecentActivities() {
       <div className="space-y-4">
         {activities.map((activity, i) => (
           <div key={i} className="flex items-start gap-4">
-            <Avatar>
-              <AvatarImage src={activity.user.avatar} />
-              <AvatarFallback>{activity.user.name[0]}</AvatarFallback>
-            </Avatar>
+            
             <div className="space-y-1">
               <p className="text-sm">{activity.message}</p>
               <p className="text-xs text-muted-foreground">

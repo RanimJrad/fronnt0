@@ -3,10 +3,9 @@
 import { useState } from "react"
 import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardSidebar } from "../components/dashboard-sidebar"
-import { AddRecruiterForm } from "../components/employee/add-recruiter-form"
-import { ReviewsTabs } from "../components/archive/archive_tabs"
+import { OffreAdminTabs } from "../components/offre_admin/offre_admin_tabs"
 
-export default function ReviewsPage() {
+export default function OffreAdminPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(false)
 
   const handleRecruiterAdded = () => {
@@ -29,14 +28,14 @@ export default function ReviewsPage() {
           <div className="md:col-span-5 lg:col-span-5 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Comptes Archivé</h1>
-                <p className="text-muted-foreground">Suivre les comptes archivé</p>
+                <h1 className="text-3xl font-bold tracking-tight">Offre d'emploi</h1>
+                <p className="text-muted-foreground">Gérer Les Offres d'emploi</p>
               </div>
               
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-              <ReviewsTabs refreshTrigger={refreshTrigger} />
+              <OffreAdminTabs refreshTrigger={refreshTrigger} />
             </div>
           </div>
         </div>
@@ -44,4 +43,3 @@ export default function ReviewsPage() {
     </div>
   )
 }
-

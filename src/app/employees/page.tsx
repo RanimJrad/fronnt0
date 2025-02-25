@@ -29,8 +29,8 @@ export default function ReviewsPage() {
           <div className="md:col-span-5 lg:col-span-5 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Reviews</h1>
-                <p className="text-muted-foreground">Manage and track employee reviews</p>
+                <h1 className="text-3xl font-bold tracking-tight">Recruteurs</h1>
+                <p className="text-muted-foreground">Gérer et suivre les recruteurs</p>
               </div>
               <AddRecruiterForm onRecruiterAdded={handleRecruiterAdded} />
             </div>

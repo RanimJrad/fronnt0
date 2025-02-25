@@ -6,18 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Home, Users, Building2, Calendar, Briefcase, Star, BarChart, Settings, UserCircle, LogOut } from "lucide-react"
 
 const menuItems = [
-  { icon: <Home className="h-4 w-4" />, label: "Dashboard", href: "/dashbord" },
-  { icon: <Users className="h-4 w-4" />, label: "Recruteurs", href: "/employees" },
-  { icon: <Building2 className="h-4 w-4" />, label: "Archive", href: "/archive" },
+  { icon: <Home className="h-4 w-4" />, label: "Dashboard", href: "/dashbord_rec" },
+  { icon: <Users className="h-4 w-4" />, label: "Candidats", href: "/candidats" },
+  //{ icon: <Building2 className="h-4 w-4" />, label: "Archive", href: "/archive" },
   //{ icon: <Calendar className="h-4 w-4" />, label: "Calendar", href: "/calendar" },
-  { icon: <Briefcase className="h-4 w-4" />, label: "Offre", href: "/offre_admin" },
+  { icon: <Briefcase className="h-4 w-4" />, label: "Offre", href: "/offre" },
   //{ icon: <Star className="h-4 w-4" />, label: "Reviews", href: "/reviews" },
   //{ icon: <BarChart className="h-4 w-4" />, label: "Reports", href: "/reports" },
   //{ icon: <Settings className="h-4 w-4" />, label: "Settings", href: "/settings" },
-  //{ icon: <UserCircle className="h-4 w-4" />, label: "Profile", href: "/profile" },
+  { icon: <UserCircle className="h-4 w-4" />, label: "Profile", href: "/profile" },
 ]
 
-export function DashboardSidebar() {
+export function DashboardSidebarRec() {
   const router = useRouter()
 
   const handleLogout = async () => {
