@@ -20,6 +20,7 @@ export function OffreAdminTabs({ refreshTrigger }: { refreshTrigger: boolean }) 
         >
           Offre Validé
         </TabsTrigger>
+        
       </TabsList>
 
       <TabsContent value="offre" className="p-6">
@@ -29,6 +30,8 @@ export function OffreAdminTabs({ refreshTrigger }: { refreshTrigger: boolean }) 
       <TabsContent value="offre_valide" className="p-6">
         <OffreAdminTableValide refresh={refreshTrigger} />
       </TabsContent>
+
+      
     </Tabs>
   )
 }

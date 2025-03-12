@@ -7,7 +7,8 @@ import { Home, Users, Building2, Calendar, Briefcase, Star, BarChart, Settings, 
 
 const menuItems = [
   { icon: <Home className="h-4 w-4" />, label: "Dashboard", href: "/dashbord_rec" },
-  { icon: <Users className="h-4 w-4" />, label: "Candidats", href: "/candidats" },
+  { icon: <Users className="h-4 w-4" />, label: "Candidats", href: "/candidat" },
+  { icon: <Building2 className="h-4 w-4" />, label: "Archive", href: "/archive_candidat" },
   //{ icon: <Building2 className="h-4 w-4" />, label: "Archive", href: "/archive" },
   //{ icon: <Calendar className="h-4 w-4" />, label: "Calendar", href: "/calendar" },
   { icon: <Briefcase className="h-4 w-4" />, label: "Offre", href: "/offre" },

@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardSidebar } from "../components/dashboard-sidebar"
-import { AddRecruiterForm } from "../components/employee/add-recruiter-form"
 import { ReviewsTabs } from "../components/archive/archive_tabs"
 
 export default function ReviewsPage() {

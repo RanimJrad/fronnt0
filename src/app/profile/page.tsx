@@ -1,6 +1,5 @@
 "use client"
 import UserMetaCard from "../components/profile/UserMetaCard"
-import UserInfoCard from "../components/profile/UserInfoCard"
 import { DashboardHeaderRec } from "../components/recruteur/dashboard-header_rec"
 import { DashboardSidebarRec } from "../components/recruteur/dashboard-sidebar_rec"
 
@@ -30,7 +29,6 @@ export default function Profile() {
             <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
               <div className="space-y-6">
                 <UserMetaCard />
-                <UserInfoCard />
               </div>
             </div>
           </div>

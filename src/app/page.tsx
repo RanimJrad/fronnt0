@@ -1,11 +1,11 @@
-import Login from "./login";
+import Index from "./index/page";
 
 
 
 export default function Home() {
   return (
   <div>
-    <Login/>
+    <Index/>
   </div>
   );
 }
