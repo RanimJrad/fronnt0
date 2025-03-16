@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface UserData {
   id: number
@@ -33,6 +34,8 @@ interface ProfileEditModalProps {
   onSuccess: () => void
 }
 
+const API_BASE_URL = "http://127.0.0.1:8000"
+
 export default function ProfileEditModal({ isOpen, onClose, userData, onSuccess }: ProfileEditModalProps) {
   const [formData, setFormData] = useState<UserData | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -41,43 +44,40 @@ export default function ProfileEditModal({ isOpen, onClose, userData, onSuccess 
   const [cvFileName, setCvFileName] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
   const imageInputRef = useRef<HTMLInputElement>(null)
   const cvInputRef = useRef<HTMLInputElement>(null)
 
-  // Initialize form data when modal opens
   useEffect(() => {
     if (userData) {
       setFormData({
         ...userData,
-        password: "", // Clear password field for security
+        password: "",
       })
       setImagePreview(userData.image || null)
-      setCvFileName(userData.cv ? extractFileName(userData.cv) : null)
+      setCvFileName(userData.cv ? userData.cv.split("/").pop() : null)
     }
   }, [userData, isOpen])
 
-  const extractFileName = (url: string): string => {
-    const parts = url.split("/")
-    return parts[parts.length - 1]
-  }
+  useEffect(() => {
+    const token = localStorage.getItem("token") || localStorage.getItem("auth_token")
+    if (!token) {
+      setError("Session expirée. Veuillez vous reconnecter.")
+    }
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    if (formData) {
-      setFormData({
-        ...formData,
-        [name]: value,
-      })
-    }
+    setFormData((prev) => (prev ? { ...prev, [name]: value } : null))
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       const file = e.target.files[0]
+      if (file.size > 2 * 1024 * 1024) {
+        setError("L'image ne doit pas dépasser 2MB")
+        return
+      }
       setImageFile(file)
-
-      // Create preview
       const reader = new FileReader()
       reader.onload = (event) => {
         setImagePreview(event.target?.result as string)
@@ -87,77 +87,95 @@ export default function ProfileEditModal({ isOpen, onClose, userData, onSuccess 
   }
 
   const handleCvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       const file = e.target.files[0]
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Le CV ne doit pas dépasser 5MB")
+        return
+      }
       setCvFile(file)
       setCvFileName(file.name)
     }
   }
 
-  const triggerImageUpload = () => {
-    imageInputRef.current?.click()
-  }
-
-  const triggerCvUpload = () => {
-    cvInputRef.current?.click()
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData) return
-
     setIsSubmitting(true)
     setError(null)
 
-    try {
-      const token = localStorage.getItem("token")
-      if (!token) throw new Error("Token non trouvé")
+    if (!formData || !userData) {
+      setError("Données utilisateur non disponibles")
+      setIsSubmitting(false)
+      return
+    }
 
-      // Create FormData object for file uploads
-      const submitData = new FormData()
+    try {
+      // Get and validate the authentication token
+      const token = localStorage.getItem("token") || localStorage.getItem("auth_token")
+      if (!token) {
+        setError("Session expirée. Veuillez vous reconnecter.")
+        setIsSubmitting(false)
+        return
+      }
+
+      const formDataToSend = new FormData()
+      formDataToSend.append("_method", "PUT")
 
       // Add text fields
       Object.entries(formData).forEach(([key, value]) => {
-        if (key !== "image" && key !== "cv" && key !== "role" && value !== undefined) {
-          submitData.append(key, value.toString())
+        if (value && key !== "id" && key !== "image" && key !== "cv") {
+          formDataToSend.append(key, value.toString())
         }
       })
 
-      // Add files if selected
-      if (imageFile) {
-        submitData.append("image", imageFile)
+      // Add files if changed
+      if (imageFile) formDataToSend.append("image", imageFile)
+      if (cvFile) formDataToSend.append("cv", cvFile)
+
+      // Validate token format
+      let response
+      if (!token.startsWith("Bearer ") && !token.startsWith("bearer ")) {
+        const formattedToken = `Bearer ${token}`
+
+        // Update headers with properly formatted token
+        response = await fetch(`${API_BASE_URL}/api/user/updateRec/${userData.id}`, {
+          method: "POST",
+          headers: {
+            Authorization: formattedToken,
+            Accept: "application/json",
+          },
+          body: formDataToSend,
+        })
+      } else {
+        // Token already has Bearer prefix
+        response = await fetch(`${API_BASE_URL}/api/user/updateRec/${userData.id}`, {
+          method: "POST",
+          headers: {
+            Authorization: token,
+            Accept: "application/json",
+          },
+          body: formDataToSend,
+        })
       }
-
-      if (cvFile) {
-        submitData.append("cv", cvFile)
-      }
-
-      // Log the data being sent for debugging
-      console.log("Sending data to API:", Object.fromEntries(submitData.entries()))
-
-      // Make sure the URL matches exactly what's defined in your Laravel routes
-      const response = await fetch(`http://127.0.0.1:8000/api/user/updateRec/${formData.id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Don't set Content-Type when using FormData
-        },
-        body: submitData,
-      })
-
-      const responseData = await response.json()
-      console.log("API Response:", responseData)
 
       if (!response.ok) {
-        throw new Error(responseData.error || "Erreur lors de la mise à jour du profil")
+        const contentType = response.headers.get("content-type")
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || errorData.error || "Erreur lors de la mise à jour")
+        } else {
+          const errorText = await response.text()
+          console.error("Non-JSON error response:", errorText)
+          throw new Error(`Erreur ${response.status}: Le serveur a retourné une réponse invalide`)
+        }
       }
 
-      // Success
+      const result = await response.json()
       onSuccess()
       onClose()
     } catch (err) {
       console.error("Error updating profile:", err)
-      setError(err instanceof Error ? err.message : "Une erreur inconnue s'est produite")
+      setError(err instanceof Error ? err.message : "Une erreur est survenue")
     } finally {
       setIsSubmitting(false)
     }
@@ -170,24 +188,16 @@ export default function ProfileEditModal({ isOpen, onClose, userData, onSuccess 
           <DialogTitle>Modifier votre profil</DialogTitle>
         </DialogHeader>
 
-        {error && <div className="p-3 mb-4 text-sm text-red-800 bg-red-100 rounded-md">{error}</div>}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col items-center mb-6">
-            <div className="relative w-24 h-24 mb-4 overflow-hidden border border-gray-200 rounded-full">
-              {imagePreview ? (
-                <Image
-                  src={imagePreview || "/placeholder.svg"}
-                  alt="Photo de profil"
-                  width={96}
-                  height={96}
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full bg-gray-100">
-                  <span className="text-gray-400">Photo</span>
-                </div>
-              )}
+            <div className="relative w-24 h-24 mb-4 overflow-hidden rounded-full border">
+              <Image src={imagePreview || "/placeholder.svg"} alt="Photo de profil" fill className="object-cover" />
             </div>
 
             <input
@@ -198,14 +208,8 @@ export default function ProfileEditModal({ isOpen, onClose, userData, onSuccess 
               className="hidden"
             />
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={triggerImageUpload}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
+            <Button type="button" variant="outline" size="sm" onClick={() => imageInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-2" />
               Changer la photo
             </Button>
           </div>
@@ -239,44 +243,19 @@ export default function ProfileEditModal({ isOpen, onClose, userData, onSuccess 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="poste">Poste</Label>
-              <Input id="poste" name="poste" value={formData?.poste || ""} onChange={handleInputChange} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="departement">Département</Label>
-              <Input
-                id="departement"
-                name="departement"
-                value={formData?.departement || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="adresse">Adresse</Label>
               <Input id="adresse" name="adresse" value={formData?.adresse || ""} onChange={handleInputChange} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nom_societe">Entreprise</Label>
-              <Input
-                id="nom_societe"
-                name="nom_societe"
-                value={formData?.nom_societe || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="password">Mot de passe (laisser vide pour ne pas modifier)</Label>
+              <Label htmlFor="password">Nouveau mot de passe</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
                 value={formData?.password || ""}
                 onChange={handleInputChange}
-                placeholder="Nouveau mot de passe"
+                placeholder="Laisser vide si inchangé"
               />
             </div>
 
@@ -290,12 +269,10 @@ export default function ProfileEditModal({ isOpen, onClose, userData, onSuccess 
                   accept="application/pdf"
                   className="hidden"
                 />
-
-                <Button type="button" variant="outline" onClick={triggerCvUpload} className="flex items-center gap-2">
-                  <Upload className="w-4 h-4" />
+                <Button type="button" variant="outline" onClick={() => cvInputRef.current?.click()}>
+                  <Upload className="w-4 h-4 mr-2" />
                   {cvFile ? "Changer le CV" : "Télécharger un CV"}
                 </Button>
-
                 {cvFileName && <span className="text-sm text-gray-600 truncate max-w-[200px]">{cvFileName}</span>}
               </div>
             </div>

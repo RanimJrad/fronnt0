@@ -94,7 +94,7 @@ export default function Login() {
           {/* Image Section */}
           <div className="md:w-1/2 relative flex items-center justify-center h-48 md:h-full bg-white">
             <div
-              className="w-32 h-32 sm:w-40 sm:h-40 md:w-64 md:h-64 lg:w-80 lg:h-80 bg-contain bg-center bg-no-repeat"
+              className="w-32 h-32 sm:w-40 sm:h-40 md:w-64 md:h-64 lg:w-80 lg:h-80 bg-contain bg-center bg-no-repeat mx-auto mt-8 md:mt-12"
               style={{
                 backgroundImage: "url(/Logo.jpeg)",
                 backgroundColor: "#ffffff",
