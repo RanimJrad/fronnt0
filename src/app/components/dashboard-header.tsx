@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import { MessageSquare } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Search, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -286,12 +286,17 @@ export function DashboardHeader() {
         </div>
 
         {/* Search - hidden on mobile, shown on md and up */}
-        
+
 
         <div className="flex items-center gap-2">
           {/* Mobile search trigger */}
           <Button variant="ghost" size="icon" className="md:hidden">
             <Search className="h-5 w-5" />
+          </Button>
+
+          {/* Message Icon */}
+          <Button variant="ghost" size="icon" className="relative" onClick={() => (window.location.href = "/chatAdmin")}>
+            <MessageSquare className="h-5 w-5" />
           </Button>
 
           {/* Notifications Dropdown */}
@@ -402,4 +407,3 @@ export function DashboardHeader() {
     </header>
   )
 }
-

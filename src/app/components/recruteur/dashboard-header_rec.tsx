@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Search, Bell } from "lucide-react"
+import { Search, Bell, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -224,10 +224,18 @@ export function DashboardHeaderRec() {
           </a>
         </div>
 
+        {/* Search - hidden on mobile, shown on md and up */}
+
+
         <div className="flex items-center gap-2">
           {/* Mobile search trigger */}
           <Button variant="ghost" size="icon" className="md:hidden">
             <Search className="h-5 w-5" />
+          </Button>
+
+          {/* Message Icon */}
+          <Button variant="ghost" size="icon" className="relative" onClick={() => (window.location.href = "/chatRec")}>
+            <MessageSquare className="h-5 w-5" />
           </Button>
 
           {/* Notifications Dropdown */}
@@ -338,4 +346,3 @@ export function DashboardHeaderRec() {
     </header>
   )
 }
-

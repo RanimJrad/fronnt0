@@ -377,16 +377,7 @@ export default function NotificationsContentRec() {
 
       {isMobile ? (
         <div className="mb-4 space-y-3">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Rechercher..."
-              className="pl-10 py-1 h-9"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+          
 
           <div className="flex items-center justify-between gap-2">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
@@ -450,7 +441,7 @@ export default function NotificationsContentRec() {
         </div>
       ) : (
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="relative w-full sm:w-64 flex-1 sm:max-w-sm">
+          {/* <div className="relative w-full sm:w-64 flex-1 sm:max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -459,7 +450,7 @@ export default function NotificationsContentRec() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+          </div> */}
 
           <div className="flex items-center gap-2">
             <DropdownMenu>
