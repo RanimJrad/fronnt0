@@ -79,6 +79,9 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [isUnarchiveDialogOpen, setIsUnarchiveDialogOpen] = useState(false)
   const [candidatToUnarchive, setCandidatToUnarchive] = useState<number | null>(null)
+  const [selectedCandidats, setSelectedCandidats] = useState<number[]>([])
+  const [selectAll, setSelectAll] = useState(false)
+  const [isBulkUnarchiveDialogOpen, setIsBulkUnarchiveDialogOpen] = useState(false)
   const isMobile = useMediaQuery("(max-width: 640px)")
 
   useEffect(() => {
@@ -118,6 +121,61 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
       setError("Erreur lors du chargement des candidats")
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Fonction pour gérer la sélection d'un candidat
+  const handleSelectCandidat = (candidatId: number, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedCandidats((prev) => [...prev, candidatId])
+    } else {
+      setSelectedCandidats((prev) => prev.filter((id) => id !== candidatId))
+    }
+  }
+
+  // Fonction pour gérer la sélection de tous les candidats
+  const handleSelectAll = (isChecked: boolean) => {
+    setSelectAll(isChecked)
+    if (isChecked) {
+      setSelectedCandidats(candidats.map((candidat) => candidat.id))
+    } else {
+      setSelectedCandidats([])
+    }
+  }
+
+  // Fonction pour désarchiver les candidats sélectionnés
+  const unarchiveSelectedCandidats = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        setError("Vous devez être connecté pour désarchiver des candidats.")
+        return
+      }
+
+      // Créer un tableau de promesses pour chaque désarchivage
+      const unarchivePromises = selectedCandidats.map((candidatId) =>
+        fetch(`http://127.0.0.1:8000/api/candidats_desarchiver/${candidatId}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      )
+
+      // Attendre que tous les désarchivages soient terminés
+      await Promise.all(unarchivePromises)
+
+      // Mettre à jour l'état pour retirer les candidats désarchivés
+      setCandidats((prevCandidats) => prevCandidats.filter((candidat) => !selectedCandidats.includes(candidat.id)))
+
+      // Réinitialiser les sélections
+      setSelectedCandidats([])
+      setSelectAll(false)
+      setIsBulkUnarchiveDialogOpen(false)
+    } catch (error) {
+      console.error("Erreur de désarchivation en masse:", error)
+      setError("Erreur lors de la désarchivation des candidats.")
     }
   }
 
@@ -210,6 +268,31 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
 
   return (
     <>
+      {/* Barre d'actions pour les opérations groupées */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="select-all"
+            checked={selectAll}
+            onChange={(e) => handleSelectAll(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <label htmlFor="select-all" className="text-sm font-medium">
+            Sélectionner tout ({candidats.length})
+          </label>
+        </div>
+
+        {selectedCandidats.length > 0 && (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">{selectedCandidats.length} candidat(s) sélectionné(s)</span>
+            <Button variant="outline" size="sm" onClick={() => setIsBulkUnarchiveDialogOpen(true)}>
+              <Undo className="mr-2 h-4 w-4" />
+              Démarquer
+            </Button>
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {candidats.map((candidat) => {
           const offre = candidat.offre
@@ -219,19 +302,30 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
               className="overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col h-full"
             >
               <CardHeader className="pb-2 px-4 sm:px-6">
-                <div className="flex items-center space-x-3 sm:space-x-4">
-                  <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 ${getColorClass(candidat.nom)}`}>
-                    <AvatarFallback className="text-white font-medium">
-                      {getInitials(candidat.nom, candidat.prenom)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-base sm:text-lg leading-none tracking-tight truncate max-w-[180px] sm:max-w-none">
-                      {candidat.prenom} {candidat.nom}
-                    </h3>
-                    <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
-                      <Briefcase className="mr-1 h-3 w-3" />
-                      <span className="truncate max-w-[180px] sm:max-w-none">{offre?.poste || "N/A"}</span>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedCandidats.includes(candidat.id)}
+                        onChange={(e) => handleSelectCandidat(candidat.id, e.target.checked)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-0 left-0 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary z-10"
+                      />
+                      <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 ${getColorClass(candidat.nom)}`}>
+                        <AvatarFallback className="text-white font-medium">
+                          {getInitials(candidat.nom, candidat.prenom)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-base sm:text-lg leading-none tracking-tight truncate max-w-[180px] sm:max-w-none">
+                        {candidat.prenom} {candidat.nom}
+                      </h3>
+                      <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+                        <Briefcase className="mr-1 h-3 w-3" />
+                        <span className="truncate max-w-[180px] sm:max-w-none">{offre?.poste || "N/A"}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -315,7 +409,7 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
                       disabled={unarchiving === candidat.id}
                     >
                       <Undo className="h-3 w-3 sm:mr-2" />
-                      <span className="hidden sm:inline">{unarchiving === candidat.id ? "..." : "Désarchiver"}</span>
+                      <span className="hidden sm:inline">{unarchiving === candidat.id ? "..." : "Démarquer"}</span>
                     </Button>
                   </div>
                 ) : (
@@ -338,7 +432,7 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
                         disabled={unarchiving === candidat.id}
                       >
                         <Undo className="mr-2 h-4 w-4" />
-                        {unarchiving === candidat.id ? "Désarchivage..." : "Désarchiver"}
+                        {unarchiving === candidat.id ? "Désarchivage..." : "Démarquer"}
                       </Button>
                     </div>
                   </>
@@ -516,7 +610,7 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
                       disabled={unarchiving === selectedCandidat.id}
                     >
                       <Undo className="mr-2 h-4 w-4" />
-                      {unarchiving === selectedCandidat.id ? "Désarchivage..." : "Désarchiver"}
+                      {unarchiving === selectedCandidat.id ? "Désarchivage..." : "Démarquer"}
                     </Button>
                     <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
                       Fermer
@@ -541,7 +635,7 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
                   className="w-full"
                 >
                   <Undo className="mr-2 h-4 w-4" />
-                  {unarchiving === selectedCandidat.id ? "Désarchivage..." : "Désarchiver"}
+                  {unarchiving === selectedCandidat.id ? "Désarchivage..." : "Démarquer"}
                 </Button>
                 <Button variant="outline" onClick={() => setIsDetailsOpen(false)} className="w-full">
                   Fermer
@@ -573,7 +667,30 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
               className={isMobile ? "w-full" : ""}
             >
               <Undo className="mr-2 h-4 w-4" />
-              {unarchiving === candidatToUnarchive ? "Désarchivage..." : "Désarchiver"}
+              {unarchiving === candidatToUnarchive ? "Désarchivage..." : "Démarquer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Bulk Unarchive Confirmation Dialog */}
+      <Dialog open={isBulkUnarchiveDialogOpen} onOpenChange={setIsBulkUnarchiveDialogOpen}>
+        <DialogContent className={`${isMobile ? "w-[90%] max-w-none" : "sm:max-w-md"}`}>
+          <DialogHeader>
+            <DialogTitle>Démarquer les candidats sélectionnés</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir démarquer les {selectedCandidats.length} candidats sélectionnés ?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className={`${isMobile ? "flex-col space-y-2" : "flex space-x-2 justify-end"}`}>
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkUnarchiveDialogOpen(false)}
+              className={isMobile ? "w-full" : ""}
+            >
+              Annuler
+            </Button>
+            <Button variant="default" onClick={unarchiveSelectedCandidats} className={isMobile ? "w-full" : ""}>
+              Démarquer
             </Button>
           </DialogFooter>
         </DialogContent>

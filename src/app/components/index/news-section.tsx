@@ -2,18 +2,16 @@
 
 import { useEffect, useState, useRef, useCallback } from "react"
 import Image from "next/image"
-import { Building, Mail, MapPin } from "lucide-react"
+import { Globe } from "lucide-react" // Import the Globe icon for website links
 
 import "../styles/recruiters-carousel.css"
 
 interface Recruiter {
-  id?: number
-  nom: string
-  prenom: string
-  email: string
-  poste: string
   nom_societe: string
   image: string | null
+  domaine_activite: string
+  apropos: string
+  lien_site_web: string | null // Added the website link property
 }
 
 export default function RecruitersSection() {
@@ -111,8 +109,8 @@ export default function RecruitersSection() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Nos recruteurs</h2>
-            <p className="text-muted-foreground">Chargement des recruteurs...</p>
+            <h2 className="text-3xl font-bold mb-4">Nos partenaires </h2>
+            <p className="text-muted-foreground">Chargement des partenaires...</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[...Array(3)].map((_, index) => (
@@ -136,7 +134,7 @@ export default function RecruitersSection() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Nos recruteurs</h2>
+            <h2 className="text-3xl font-bold mb-4">Nos partenaires</h2>
             <p className="text-red-500">{error}</p>
           </div>
         </div>
@@ -148,7 +146,7 @@ export default function RecruitersSection() {
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Nos recruteurs</h2>
+          <h2 className="text-3xl font-bold mb-4">Nos partenaires</h2>
           <p className="text-muted-foreground">
             Trouvez les meilleurs talents et simplifiez votre processus de recrutement.
           </p>
@@ -161,26 +159,31 @@ export default function RecruitersSection() {
                 <div className="recruiter-image-container">
                   <Image
                     src={recruiter.image || "/placeholder.svg?height=120&width=120"}
-                    alt={`${recruiter.prenom} ${recruiter.nom}`}
+                    alt={recruiter.nom_societe}
                     width={120}
                     height={120}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="recruiter-card-content">
-                  <h3 className="recruiter-name">
-                    {recruiter.prenom} {recruiter.nom}
-                  </h3>
-                  <p className="recruiter-position">{recruiter.poste}</p>
-                  <p className="recruiter-company">
-                    <Building className="inline-block h-4 w-4 mr-1" />
-                    {recruiter.nom_societe}
-                  </p>
-                  <div className="recruiter-department">
-                  
-                    <Mail className="inline-block h-3 w-3 mr-1" />
-                    {recruiter.email}
+                  <h3 className="recruiter-name">{recruiter.nom_societe}</h3>
+                  <p className="recruiter-position">{recruiter.domaine_activite}</p>
+                  <div className="recruiter-description mt-2">
+                    <p className="text-sm text-muted-foreground line-clamp-2">{recruiter.apropos}</p>
                   </div>
+                  {recruiter.lien_site_web && (
+                    <div className="mt-3 flex items-center">
+                      <Globe className="h-4 w-4 text-muted-foreground mr-1" />
+                      <a
+                        href={recruiter.lien_site_web}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline truncate"
+                      >
+                        {recruiter.lien_site_web.replace(/^https?:\/\/(www\.)?/, "")}
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

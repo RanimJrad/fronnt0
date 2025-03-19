@@ -51,7 +51,7 @@ export default function JobDetailPage({
     nom: "",
     prenom: "",
     email: "",
-    pays: "",
+    pays: "Tunisie",
     ville: "",
     codePostal: "",
     tel: "",
@@ -145,7 +145,7 @@ export default function JobDetailPage({
       nom: "",
       prenom: "",
       email: "",
-      pays: "",
+      pays: "Tunisie",
       ville: "",
       codePostal: "",
       tel: "",
@@ -406,7 +406,7 @@ export default function JobDetailPage({
 
       {/* Modern Application Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Postuler pour: {offre?.poste}</DialogTitle>
             <DialogDescription>Remplissez le formulaire ci-dessous pour soumettre votre candidature.</DialogDescription>
@@ -423,7 +423,7 @@ export default function JobDetailPage({
               </Alert>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
               {error && !showErrorDialog && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -432,61 +432,73 @@ export default function JobDetailPage({
                 </Alert>
               )}
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h3 className="text-lg font-medium">Informations personnelles</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-3">
                     <Label htmlFor="prenom">Prénom</Label>
                     <Input id="prenom" name="prenom" value={formData.prenom} onChange={handleChange} required />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label htmlFor="nom">Nom</Label>
                     <Input id="nom" name="nom" value={formData.nom} onChange={handleChange} required />
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="email">Adresse email</Label>
                   <Input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required />
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h3 className="text-lg font-medium">Adresse</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-3">
                     <Label htmlFor="pays">Pays</Label>
-                    <Select value={formData.pays} onValueChange={(value) => handleSelectChange("pays", value)}>
+                    <Input
+                      id="pays"
+                      name="pays"
+                      value="Tunisie"
+                      readOnly
+                      className="bg-muted cursor-not-allowed"
+                      onChange={() => {}}
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="ville">Ville</Label>
+                    <Select value={formData.ville} onValueChange={(value) => handleSelectChange("ville", value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez un pays" />
+                        <SelectValue placeholder="Sélectionnez une ville" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Tunisie">Tunisie</SelectItem>
-                        <SelectItem value="Algérie">Algérie</SelectItem>
-                        <SelectItem value="Maroc">Maroc</SelectItem>
-                        <SelectItem value="Libye">Libye</SelectItem>
-                        <SelectItem value="Égypte">Égypte</SelectItem>
-                        <SelectItem value="France">France</SelectItem>
-                        <SelectItem value="Belgique">Belgique</SelectItem>
-                        <SelectItem value="Koweït">Koweït</SelectItem>
-                        <SelectItem value="Arabie Saoudite">Arabie Saoudite</SelectItem>
-                        <SelectItem value="Émirats Arabes Unis">Émirats Arabes Unis</SelectItem>
-                        <SelectItem value="Qatar">Qatar</SelectItem>
-                        <SelectItem value="Bahreïn">Bahreïn</SelectItem>
-                        <SelectItem value="Suisse">Suisse</SelectItem>
-                        <SelectItem value="Canada">Canada</SelectItem>
-                        <SelectItem value="Mauritanie">Mauritanie</SelectItem>
-                        <SelectItem value="Comores">Comores</SelectItem>
-                        <SelectItem value="Somalie">Somalie</SelectItem>
-                        <SelectItem value="Djibouti">Djibouti</SelectItem>
-                        <SelectItem value="Autre">Autre</SelectItem>
+                        <SelectItem value="Tunis">Tunis</SelectItem>
+                        <SelectItem value="Sfax">Sfax</SelectItem>
+                        <SelectItem value="Sousse">Sousse</SelectItem>
+                        <SelectItem value="Kairouan">Kairouan</SelectItem>
+                        <SelectItem value="Bizerte">Bizerte</SelectItem>
+                        <SelectItem value="Gabès">Gabès</SelectItem>
+                        <SelectItem value="Ariana">Ariana</SelectItem>
+                        <SelectItem value="Gafsa">Gafsa</SelectItem>
+                        <SelectItem value="Monastir">Monastir</SelectItem>
+                        <SelectItem value="Ben Arous">Ben Arous</SelectItem>
+                        <SelectItem value="Kasserine">Kasserine</SelectItem>
+                        <SelectItem value="Médenine">Médenine</SelectItem>
+                        <SelectItem value="Nabeul">Nabeul</SelectItem>
+                        <SelectItem value="Tataouine">Tataouine</SelectItem>
+                        <SelectItem value="Béja">Béja</SelectItem>
+                        <SelectItem value="Jendouba">Jendouba</SelectItem>
+                        <SelectItem value="Le Kef">Le Kef</SelectItem>
+                        <SelectItem value="Mahdia">Mahdia</SelectItem>
+                        <SelectItem value="Sidi Bouzid">Sidi Bouzid</SelectItem>
+                        <SelectItem value="Siliana">Siliana</SelectItem>
+                        <SelectItem value="Tozeur">Tozeur</SelectItem>
+                        <SelectItem value="Zaghouan">Zaghouan</SelectItem>
+                        <SelectItem value="Kébili">Kébili</SelectItem>
+                        <SelectItem value="Manouba">Manouba</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ville">Ville</Label>
-                    <Input id="ville" name="ville" value={formData.ville} onChange={handleChange} required />
-                  </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label htmlFor="codePostal">Code postal</Label>
                     <Input
                       id="codePostal"
@@ -499,18 +511,18 @@ export default function JobDetailPage({
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h3 className="text-lg font-medium">Téléphone</h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="tel">Téléphone</Label>
                   <Input type="tel" id="tel" name="tel" value={formData.tel} onChange={handleChange} required />
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h3 className="text-lg font-medium">Formation</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
                     <Label htmlFor="niveauEtude">Niveau d'étude</Label>
                     <Select
                       value={formData.niveauEtude}
@@ -531,7 +543,7 @@ export default function JobDetailPage({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label htmlFor="niveauExperience">Niveau d'éxperience</Label>
                     <Select
                       value={formData.niveauExperience}
@@ -554,7 +566,7 @@ export default function JobDetailPage({
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h3 className="text-lg font-medium">CV</h3>
                 <div
                   className={cn(
@@ -622,9 +634,7 @@ export default function JobDetailPage({
                 Vous avez déjà postulé à cette offre avec cet e-mail.
               </AlertDescription>
             </Alert>
-            <p className="text-sm text-muted-foreground mb-4">
-              Veuillez contacter notre équipe de recrutement.
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">Veuillez contacter notre équipe de recrutement.</p>
           </div>
           <div className="flex justify-end">
             <Button
