@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { ReviewsTable } from "./employee-table"
 import { UserDetailsDialog } from "./UserDetailsDialog"
+import "../styles/employee-cards.css"
 
 interface User {
   id: number
@@ -32,6 +33,7 @@ interface User {
   image?: string
   cv?: string
   nom_societe: string
+  domaine_activite?: string
 }
 
 export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
@@ -88,30 +90,30 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
     }
   }, [])
 
-  // Fonction de recherche côté client
-  const handleSearch = (value: string) => {
+  // Fonction de recherche par nom de société
+  const handleSearch = async (value: string) => {
     setSearchTerm(value)
     setLoading(true)
+    setShowResults(true)
 
     if (value.length < 1) {
       setSearchResults([])
       setShowResults(false)
-      setSelectedUser(null) // Clear selected user when search is empty
+      setSelectedUser(null)
       setLoading(false)
       return
     }
 
     try {
-      // Filtrer les utilisateurs côté client
+      // Filtrer directement les utilisateurs qui contiennent la lettre saisie
       const searchLower = value.toLowerCase()
       const filteredResults = allUsers.filter((user) => {
-        return user.nom.toLowerCase().includes(searchLower) || user.prenom.toLowerCase().includes(searchLower)
+        return user.nom_societe?.toLowerCase().includes(searchLower)
       })
-
       setSearchResults(filteredResults)
-      setShowResults(true)
     } catch (error) {
       console.error("Erreur de recherche:", error)
+      setSearchResults([])
     } finally {
       setLoading(false)
     }
@@ -119,15 +121,17 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
 
   // Get initials for avatar
   const getInitials = (nom: string, prenom: string) => {
-    return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase()
+    const firstNameInitial = prenom && prenom.length > 0 ? prenom.charAt(0) : ""
+    const lastNameInitial = nom && nom.length > 0 ? nom.charAt(0) : ""
+    return `${firstNameInitial}${lastNameInitial}`.toUpperCase()
   }
 
   // Handle user selection
   const handleSelectUser = (user: User) => {
     setSelectedUser(user)
     setShowResults(false)
-    // Set the full name in the search bar
-    setSearchTerm(`${user.prenom} ${user.nom}`)
+    // Set the company name in the search bar
+    setSearchTerm(user.nom_societe || "")
   }
 
   // Clear search and selected user
@@ -192,7 +196,7 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
         <div className="relative flex-1" ref={searchRef}>
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Rechercher un recruteur par nom ou prénom..."
+            placeholder="Rechercher un recruteur par nom de société..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
@@ -218,22 +222,19 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
               {searchResults.map((user) => (
                 <div
                   key={user.id}
-                  className="p-2 hover:bg-muted cursor-pointer flex items-center gap-3"
+                  className="p-2 hover:bg-muted cursor-pointer flex items-center gap-2"
                   onClick={() => handleSelectUser(user)}
                 >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={user.image || `/placeholder.svg?height=32&width=32`}
-                      alt={`${user.prenom} ${user.nom}`}
-                    />
-                    <AvatarFallback>{getInitials(user.nom, user.prenom)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">
-                      {user.prenom} {user.nom}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{user.email}</div>
+                  <div className="flex-shrink-0">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={user.image || `/placeholder.svg?height=32&width=32`}
+                        alt={user.nom_societe || "Logo société"}
+                      />
+                      <AvatarFallback>{user.nom_societe?.[0]}</AvatarFallback>
+                    </Avatar>
                   </div>
+                  <div className="text-sm text-black">{user.nom_societe || "Société non spécifiée"}</div>
                 </div>
               ))}
             </div>
@@ -255,31 +256,21 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
               <Avatar className="user-avatar">
                 <AvatarImage
                   src={selectedUser.image || `/placeholder.svg?height=96&width=96`}
-                  alt={`${selectedUser.prenom} ${selectedUser.nom}`}
+                  alt={selectedUser.nom_societe}
                 />
-                <AvatarFallback className="avatar-fallback">
-                  {selectedUser.prenom?.[0]}
-                  {selectedUser.nom?.[0]}
-                </AvatarFallback>
+                <AvatarFallback className="avatar-fallback">{selectedUser.nom_societe?.[0]}</AvatarFallback>
               </Avatar>
             </div>
 
             <CardContent className="card-content">
-              <h3 className="user-name">
-                {selectedUser.prenom} {selectedUser.nom}
-              </h3>
-
-              <Badge className="user-badge">{selectedUser.poste || "Non spécifié"}</Badge>
+              <h3 className="user-name">{selectedUser.nom_societe}</h3>
+              <Badge className="user-badge">{selectedUser.domaine_activite || "info"}</Badge>
 
               <div className="user-details">
                 <div className="detail-row">
-                  <span className="detail-label">Société:</span>
-                  <span className="detail-value">{selectedUser.nom_societe || "Non spécifiée"}</span>
-                </div>
-                <div className="detail-row">
                   <span className="detail-label">Email:</span>
                   <span
-                    className="detail-value cursor-pointer text-blue-600 hover:underline"
+                    className="detail-value email-link"
                     onClick={() =>
                       window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${selectedUser.email}`, "_blank")
                     }
@@ -303,18 +294,16 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
             <CardFooter className="card-footer">
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => handleViewDetails(selectedUser)}
                 className="action-button view-button"
+                onClick={() => handleViewDetails(selectedUser)}
               >
                 <Eye className="button-icon" />
                 Détails
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => archiveUser(selectedUser.id)}
                 className="action-button archive-button"
+                onClick={() => archiveUser(selectedUser.id)}
               >
                 <Trash className="button-icon" />
                 Archiver
@@ -342,10 +331,12 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
       <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirmation d'archivage</DialogTitle>
-            <DialogDescription>Êtes-vous sûr de vouloir archiver cet utilisateur ?</DialogDescription>
+            <DialogTitle className="archive-dialog-title">Confirmation d'archivage</DialogTitle>
+            <DialogDescription className="archive-dialog-description">
+              Êtes-vous sûr de vouloir archiver cet utilisateur ?
+            </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex flex-row justify-end gap-2 sm:justify-end">
+          <DialogFooter className="archive-dialog-footer flex flex-row justify-end gap-2 sm:justify-end">
             <Button type="button" variant="outline" onClick={() => setIsArchiveDialogOpen(false)}>
               Annuler
             </Button>
