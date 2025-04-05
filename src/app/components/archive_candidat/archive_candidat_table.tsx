@@ -143,12 +143,11 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
     }
   }
 
-  // Fonction pour désarchiver les candidats sélectionnés
   const unarchiveSelectedCandidats = async () => {
     try {
       const token = localStorage.getItem("token")
       if (!token) {
-        setError("Vous devez être connecté pour désarchiver des candidats.")
+        setError("Vous devez être connecté pour démarquer des candidats.")
         return
       }
 
@@ -191,11 +190,10 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
     try {
       const token = localStorage.getItem("token")
       if (!token) {
-        setError("Vous devez être connecté pour désarchiver un candidat.")
+        setError("Vous devez être connecté pour démarquer un candidat.")
         return
       }
 
-      // Utiliser le bon endpoint API pour désarchiver
       const response = await fetch(`http://127.0.0.1:8000/api/candidats_desarchiver/${candidatToUnarchive}`, {
         method: "PUT",
         headers: {
@@ -650,8 +648,8 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
       <Dialog open={isUnarchiveDialogOpen} onOpenChange={setIsUnarchiveDialogOpen}>
         <DialogContent className={`${isMobile ? "w-[90%] max-w-none" : "sm:max-w-md"}`}>
           <DialogHeader>
-            <DialogTitle>Confirmation de désarchivage</DialogTitle>
-            <DialogDescription>Êtes-vous sûr de vouloir désarchiver ce candidat ?</DialogDescription>
+            <DialogTitle>Confirmation de démarquer</DialogTitle>
+            <DialogDescription>Êtes-vous sûr de vouloir démarquer ce candidat ?</DialogDescription>
           </DialogHeader>
           <DialogFooter className={`${isMobile ? "flex-col space-y-2 mt-4" : "flex justify-end gap-3 mt-4"}`}>
             <Button
@@ -667,7 +665,7 @@ const ArchiveCandidatsTable: React.FC<ArchiveCandidatsTableProps> = ({ refresh }
               className={isMobile ? "w-full" : ""}
             >
               <Undo className="mr-2 h-4 w-4" />
-              {unarchiving === candidatToUnarchive ? "Désarchivage..." : "Démarquer"}
+              {unarchiving === candidatToUnarchive ? "Démarquer..." : "Démarquer"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -847,7 +847,7 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
                         name="pays"
                         value={formData.pays}
                         onChange={handleInputChange}
-                        placeholder="Ex: Tunisie"
+                        placeholder="Tunisie"
                         className={`${styles.input} pl-10`}
                         required
                       />

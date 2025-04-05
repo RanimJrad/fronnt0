@@ -169,13 +169,13 @@ export default function ProfilePage() {
                       <p className="mb-2 text-xs leading-normal text-gray-500">Site Web</p>
                       {userData?.lien_site_web ? (
                         <a
-                          href={userData.lien_site_web}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          {userData.lien_site_web}
-                        </a>
+                        href={userData.lien_site_web}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Visiter le site
+                      </a>
                       ) : (
                         <p className="text-sm font-medium text-gray-800">Non spécifié</p>
                       )}

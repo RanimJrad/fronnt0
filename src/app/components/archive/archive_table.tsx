@@ -377,7 +377,7 @@ const ArchiveTable: React.FC<ArchiveTableProps> = ({ refresh }) => {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          {selectedUser.lien_site_web}
+                          Visiter le site
                         </a>
                       </div>
                     </div>

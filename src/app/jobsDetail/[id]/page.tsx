@@ -65,6 +65,7 @@ export default function JobDetailPage({
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
+  const [candidatId, setCandidatId] = useState<number | null>(null)
 
   useEffect(() => {
     // Fetch job details
@@ -158,19 +159,78 @@ export default function JobDetailPage({
     setSuccess(false)
   }
 
+  // Récupérer l'ID du candidat à partir de l'email
+  const fetchCandidatIdByEmail = async (email) => {
+    try {
+      console.log(`Récupération de l'ID candidat pour l'email: ${email}`)
+      const response = await fetch(`http://127.0.0.1:8000/api/candidat-by-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, offre_id: formData.offre_id }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erreur lors de la récupération de l'ID candidat: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log(`Réponse de l'API candidat-by-email: ${JSON.stringify(data)}`)
+
+      if (data && data.id) {
+        console.log(`ID candidat récupéré: ${data.id}`)
+        return data.id
+      } else {
+        throw new Error("Aucun ID candidat trouvé dans la réponse")
+      }
+    } catch (error) {
+      console.error(`Erreur lors de la récupération de l'ID candidat: ${error.message}`)
+      return null
+    }
+  }
+
+  // Rediriger vers le test de personnalité
+  function showTestDirectly() {
+    try {
+      // Récupérer l'ID du candidat à partir de l'email
+      fetchCandidatIdByEmail(formData.email).then((candidatId) => {
+        if (candidatId) {
+          // Rediriger vers la page de test avec les IDs
+          console.log(`Redirection vers le test avec candidatId=${candidatId}, offreId=${formData.offre_id}`)
+          window.location.href = `/test-personnalite/${candidatId}/${formData.offre_id}`
+        } else {
+          // Si l'API ne retourne pas d'ID candidat, utiliser un ID par défaut pour les tests
+          // IMPORTANT: Remplacer ces valeurs par des IDs valides dans votre base de données
+          const defaultCandidatId = 4 // ID candidat valide dans votre système
+          const defaultOffreId = formData.offre_id || 1 // Utiliser l'ID de l'offre actuelle ou 1 par défaut
+
+          console.log(`Utilisation des IDs par défaut: candidat=${defaultCandidatId}, offre=${defaultOffreId}`)
+          window.location.href = `/test-personnalite/${defaultCandidatId}/${defaultOffreId}`
+        }
+      })
+    } catch (error) {
+      console.error(`Erreur lors de la redirection vers le test: ${error.message}`)
+      setError("Impossible d'afficher le test de personnalité. Veuillez réessayer plus tard.")
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    console.log("Formulaire soumis")
     setError(null)
     setSuccess(false)
     setSubmitting(true)
 
     if (!file) {
+      console.log("Erreur: Pas de fichier CV")
       setError("Veuillez sélectionner un CV")
       setSubmitting(false)
       return
     }
 
     try {
+      console.log("Envoi des données au serveur...")
       const formDataToSend = new FormData()
       formDataToSend.append("nom", formData.nom)
       formDataToSend.append("prenom", formData.prenom)
@@ -189,7 +249,27 @@ export default function JobDetailPage({
         body: formDataToSend,
       })
 
-      const data = await response.json()
+      console.log(`Réponse reçue: ${response.status}`)
+
+      // Vérifiez si la réponse est JSON
+      const contentType = response.headers.get("content-type")
+      console.log(`Type de contenu: ${contentType}`)
+
+      let data
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await response.json()
+        console.log(`Données reçues: ${JSON.stringify(data)}`)
+      } else {
+        const text = await response.text()
+        console.log(`Réponse texte: ${text}`)
+        try {
+          data = JSON.parse(text)
+          console.log("Texte parsé en JSON avec succès")
+        } catch (e) {
+          console.error(`Erreur de parsing JSON: ${e.message}`)
+          data = { error: "Format de réponse non valide" }
+        }
+      }
 
       if (!response.ok) {
         // Check if the error is about already applied
@@ -203,16 +283,39 @@ export default function JobDetailPage({
         }
       } else {
         setSuccess(true)
-        setTimeout(() => {
-          setShowForm(false)
-          resetForm()
-        }, 2000)
+
+        // Vérifier si l'ID du candidat est présent dans la réponse
+        if (data.candidat && data.candidat.id) {
+          const candidatIdValue = data.candidat.id
+          console.log(`ID du candidat récupéré: ${candidatIdValue}`)
+          setCandidatId(candidatIdValue)
+
+          // Show the personality test after a short delay
+          setTimeout(() => {
+            console.log("Redirection vers la page de test de personnalité...")
+            window.location.href = `/test-personnalite/${candidatIdValue}/${formData.offre_id}`
+          }, 1500)
+        } else {
+          console.log("Aucun ID de candidat n'a été retourné, tentative de récupération par email")
+
+          // Si l'ID n'est pas retourné, essayer de le récupérer par email
+          setTimeout(async () => {
+            await showTestDirectly()
+          }, 1500)
+        }
       }
     } catch (error) {
-      console.error("Erreur:", error)
+      console.error(`Erreur: ${error.message}`)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleTestComplete = () => {
+    // Close the form and reset everything after test completion
+    console.log("Test terminé, fermeture du formulaire")
+    setShowForm(false)
+    resetForm()
   }
 
   if (loading) {
@@ -405,10 +508,18 @@ export default function JobDetailPage({
       <Footer />
 
       {/* Modern Application Form Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowForm(false)
+            resetForm()
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Postuler pour: {offre?.poste}</DialogTitle>
+            <DialogTitle className="text-xl font-bold">{`Postuler pour: ${offre?.poste}`}</DialogTitle>
             <DialogDescription>Remplissez le formulaire ci-dessous pour soumettre votre candidature.</DialogDescription>
           </DialogHeader>
 
@@ -418,12 +529,20 @@ export default function JobDetailPage({
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <AlertTitle className="text-green-800">Candidature envoyée</AlertTitle>
                 <AlertDescription className="text-green-700">
-                  Votre candidature a été envoyée avec succès. Nous vous contacterons bientôt.
+                  Votre candidature a été envoyée avec succès. Veuillez patienter pendant que nous préparons votre test
+                  de personnalité...
                 </AlertDescription>
               </Alert>
+
+              {/* Bouton pour forcer l'affichage du test */}
+              <div className="flex justify-center mt-4">
+                <Button onClick={showTestDirectly} className="bg-blue-500 hover:bg-blue-600">
+                  Passer au test de personnalité
+                </Button>
+              </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
               {error && !showErrorDialog && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -432,73 +551,36 @@ export default function JobDetailPage({
                 </Alert>
               )}
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <h3 className="text-lg font-medium">Informations personnelles</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="prenom">Prénom</Label>
                     <Input id="prenom" name="prenom" value={formData.prenom} onChange={handleChange} required />
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <Label htmlFor="nom">Nom</Label>
                     <Input id="nom" name="nom" value={formData.nom} onChange={handleChange} required />
                   </div>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <Label htmlFor="email">Adresse email</Label>
                   <Input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required />
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <h3 className="text-lg font-medium">Adresse</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="pays">Pays</Label>
-                    <Input
-                      id="pays"
-                      name="pays"
-                      value="Tunisie"
-                      readOnly
-                      className="bg-muted cursor-not-allowed"
-                      onChange={() => {}}
-                    />
+                    <Input id="pays" name="pays" value={formData.pays} readOnly />
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <Label htmlFor="ville">Ville</Label>
-                    <Select value={formData.ville} onValueChange={(value) => handleSelectChange("ville", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez une ville" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Tunis">Tunis</SelectItem>
-                        <SelectItem value="Sfax">Sfax</SelectItem>
-                        <SelectItem value="Sousse">Sousse</SelectItem>
-                        <SelectItem value="Kairouan">Kairouan</SelectItem>
-                        <SelectItem value="Bizerte">Bizerte</SelectItem>
-                        <SelectItem value="Gabès">Gabès</SelectItem>
-                        <SelectItem value="Ariana">Ariana</SelectItem>
-                        <SelectItem value="Gafsa">Gafsa</SelectItem>
-                        <SelectItem value="Monastir">Monastir</SelectItem>
-                        <SelectItem value="Ben Arous">Ben Arous</SelectItem>
-                        <SelectItem value="Kasserine">Kasserine</SelectItem>
-                        <SelectItem value="Médenine">Médenine</SelectItem>
-                        <SelectItem value="Nabeul">Nabeul</SelectItem>
-                        <SelectItem value="Tataouine">Tataouine</SelectItem>
-                        <SelectItem value="Béja">Béja</SelectItem>
-                        <SelectItem value="Jendouba">Jendouba</SelectItem>
-                        <SelectItem value="Le Kef">Le Kef</SelectItem>
-                        <SelectItem value="Mahdia">Mahdia</SelectItem>
-                        <SelectItem value="Sidi Bouzid">Sidi Bouzid</SelectItem>
-                        <SelectItem value="Siliana">Siliana</SelectItem>
-                        <SelectItem value="Tozeur">Tozeur</SelectItem>
-                        <SelectItem value="Zaghouan">Zaghouan</SelectItem>
-                        <SelectItem value="Kébili">Kébili</SelectItem>
-                        <SelectItem value="Manouba">Manouba</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input id="ville" name="ville" value={formData.ville} onChange={handleChange} required />
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <Label htmlFor="codePostal">Code postal</Label>
                     <Input
                       id="codePostal"
@@ -511,18 +593,18 @@ export default function JobDetailPage({
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <h3 className="text-lg font-medium">Téléphone</h3>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <Label htmlFor="tel">Téléphone</Label>
                   <Input type="tel" id="tel" name="tel" value={formData.tel} onChange={handleChange} required />
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <h3 className="text-lg font-medium">Formation</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="niveauEtude">Niveau d'étude</Label>
                     <Select
                       value={formData.niveauEtude}
@@ -543,7 +625,7 @@ export default function JobDetailPage({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <Label htmlFor="niveauExperience">Niveau d'éxperience</Label>
                     <Select
                       value={formData.niveauExperience}
@@ -566,7 +648,7 @@ export default function JobDetailPage({
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <h3 className="text-lg font-medium">CV</h3>
                 <div
                   className={cn(
@@ -635,9 +717,23 @@ export default function JobDetailPage({
               </AlertDescription>
             </Alert>
             <p className="text-sm text-muted-foreground mb-4">Veuillez contacter notre équipe de recrutement.</p>
+
+            {/* Bouton pour afficher le test même si déjà postulé */}
+            <div className="flex justify-center mt-2">
+              <Button
+                onClick={() => {
+                  setShowErrorDialog(false)
+                  showTestDirectly()
+                }}
+                className="bg-blue-500 hover:bg-blue-600"
+              >
+                Passer au test de personnalité
+              </Button>
+            </div>
           </div>
           <div className="flex justify-end">
             <Button
+              variant="outline"
               onClick={() => {
                 setShowErrorDialog(false)
               }}
@@ -685,4 +781,3 @@ function RelatedJobBlock({ job }) {
     </Link>
   )
 }
-

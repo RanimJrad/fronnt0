@@ -240,7 +240,7 @@ export default function NotificationsContent() {
             Département: <span className="font-medium">{notification.data.department}</span>
           </div>
           <div>
-            Ajouté par: <span className="font-medium">{notification.data.recruiter_name}</span>
+            Ajouté par: <span className="font-medium">{notification.data.company}</span>
           </div>
         </div>
       )
@@ -362,15 +362,7 @@ export default function NotificationsContent() {
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        {/* <div className="relative w-full">
-          <Input
-            type="search"
-            placeholder="Rechercher..."
-            className="pl-10 py-1 h-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div> */}
+       
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -476,4 +468,3 @@ export default function NotificationsContent() {
     </div>
   )
 }
-

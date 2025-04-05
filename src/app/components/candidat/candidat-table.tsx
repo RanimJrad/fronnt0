@@ -176,7 +176,7 @@ export function CandidatsTable({ refresh }: { refresh: boolean }) {
           console.warn(`Aucune offre trouvée pour le candidat avec l'email ${email}`)
           return []
         }
-        throw new Error(`Erreur lors de la récupération des offres pour ${email}`)
+       
       }
 
       const data = await response.json()
