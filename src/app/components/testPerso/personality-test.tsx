@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import ImageAnalysisTest from "./image-analysis-test"
+import TestSecurity from "./test-security"
 
 interface Option {
   text: string
@@ -32,14 +34,20 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
   const [testCompleted, setTestCompleted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [answers, setAnswers] = useState<(Option | null)[]>([])
+  const [testStage, setTestStage] = useState<"qcm" | "image" | "completed">("qcm")
+  const [personalityAnalysis, setPersonalityAnalysis] = useState<string | null>(null)
+  const [securityViolations, setSecurityViolations] = useState<Record<string, number>>({})
 
-  // Use refs to track initialization state
+  // Use refs to track initialization state and prevent multiple API calls
   const isInitialRender = useRef(true)
   const questionsInitialized = useRef(false)
+  const apiCallInProgress = useRef(false)
 
   // Fetch questions when component mounts
   useEffect(() => {
-    fetchQuestions()
+    if (!apiCallInProgress.current && !questionsInitialized.current) {
+      fetchQuestions()
+    }
   }, [candidatId, offreId])
 
   // Initialize answers array when questions are loaded
@@ -65,7 +73,14 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
   }, [currentQuestionIndex, answers, questions])
 
   const fetchQuestions = async () => {
+    // Prevent multiple simultaneous API calls
+    if (apiCallInProgress.current) {
+      console.log("API call already in progress, skipping duplicate fetch")
+      return
+    }
+
     try {
+      apiCallInProgress.current = true
       setLoading(true)
       setError(null)
       console.log(`Récupération des questions pour candidat ID: ${candidatId}, offre ID: ${offreId}`)
@@ -166,6 +181,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
       setError("Impossible de charger les questions du test. Veuillez réessayer.")
     } finally {
       setLoading(false)
+      apiCallInProgress.current = false
     }
   }
 
@@ -198,7 +214,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
       // Calculate final score from all answers
       const finalScore = newAnswers.reduce((total, answer) => total + (answer ? answer.score : 0), 0)
       setTotalScore(finalScore)
-      submitTest(finalScore)
+      submitQcmTest(finalScore)
     }
   }
 
@@ -209,10 +225,10 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
     }
   }
 
-  const submitTest = async (finalScore: number) => {
+  const submitQcmTest = async (finalScore: number) => {
     try {
       setSubmitting(true)
-      console.log(`Soumission du test avec score total: ${finalScore}`)
+      console.log(`Soumission du test QCM avec score total: ${finalScore}`)
 
       // Ensure we have valid IDs and convert them to numbers
       const candidatIdNumber = Number(candidatId)
@@ -245,6 +261,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
               candidat_id: candidatIdNumber,
               offre_id: offreIdNumber,
               score: finalScore,
+              security_violations: securityViolations, // Send security violations to the backend
             }),
           })
 
@@ -289,34 +306,32 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
         }
       }
 
-      // Finaliser le test même si l'enregistrement a échoué
-      console.log("Test complété" + (success ? " avec succès" : " mais l'enregistrement a échoué"))
-      setTestCompleted(true)
-
-      // Attendre un peu avant de fermer le test
-      setTimeout(() => {
-        if (onTestComplete) {
-          onTestComplete()
-        }
-      }, 3000)
+      // Move to the image analysis stage
+      setTestStage("image")
     } catch (error) {
       console.error(`Erreur finale: ${error instanceof Error ? error.message : String(error)}`)
       setError(`Erreur lors de l'enregistrement du score: ${error instanceof Error ? error.message : String(error)}`)
 
-      // Même en cas d'erreur, permettre à l'utilisateur de terminer le test
+      // Even if there's an error, move to the image analysis stage
       setTimeout(() => {
-        console.log("Permettre à l'utilisateur de terminer malgré l'erreur")
-        setTestCompleted(true)
-
-        setTimeout(() => {
-          if (onTestComplete) {
-            onTestComplete()
-          }
-        }, 3000)
+        setTestStage("image")
       }, 2000)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleImageAnalysisComplete = (analysis: string) => {
+    setPersonalityAnalysis(analysis)
+    setTestStage("completed")
+    setTestCompleted(true)
+
+    // Wait a bit before calling the onTestComplete callback
+    setTimeout(() => {
+      if (onTestComplete) {
+        onTestComplete()
+      }
+    }, 3000)
   }
 
   // Navigation directe vers une question spécifique
@@ -334,7 +349,21 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
     }
   }
 
-  if (loading) {
+  // Handle security violations
+  const handleSecurityViolation = (type: string, count: number) => {
+    setSecurityViolations((prev) => ({
+      ...prev,
+      [type]: count,
+    }))
+
+    // Log the violation to the console
+    console.log(`Security violation: ${type}, count: ${count}`)
+
+    // You could also send this to your backend in real-time
+    // This example just stores it to send with the final submission
+  }
+
+  if (loading && testStage === "qcm") {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
@@ -343,19 +372,42 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
     )
   }
 
-  if (testCompleted) {
+  if (testStage === "completed") {
     return (
       <div className="success-container">
         <div className="success-icon-container">
           <CheckCircle2 className="success-icon" />
         </div>
         <h3 className="success-title">Test terminé avec succès !</h3>
-        <p className="success-message">Votre score est de {totalScore} points.</p>
+        <p className="success-message">Votre candidature a été enregistrée avec succès.</p>
+        {personalityAnalysis && (
+          <div className="bg-[#ecfdf5] p-4 rounded-lg border border-[#a7f3d0] mb-4 max-w-2xl text-left">
+            <h4 className="font-medium text-[#065f46] mb-2">Analyse de personnalité</h4>
+            <p className="text-[#047857]">{personalityAnalysis}</p>
+          </div>
+        )}
       </div>
     )
   }
 
-  if (error) {
+  if (testStage === "image") {
+    return (
+      <TestSecurity onViolation={handleSecurityViolation} maxViolations={5}>
+        <div className="test-content">
+          <div className="test-instructions">
+            <h3 className="instructions-title">Deuxième partie : Analyse d'image</h3>
+            <p className="instructions-text">
+              Dans cette partie du test, vous allez analyser une image qui représente une situation professionnelle.
+              Votre description nous aidera à mieux comprendre votre personnalité et votre approche du travail.
+            </p>
+          </div>
+          <ImageAnalysisTest candidatId={candidatId} offreId={offreId} onComplete={handleImageAnalysisComplete} />
+        </div>
+      </TestSecurity>
+    )
+  }
+
+  if (error && testStage === "qcm") {
     return (
       <div className="error-container">
         <Alert variant="destructive" className="error-alert">
@@ -374,7 +426,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
     )
   }
 
-  if (!questions.length) {
+  if (!questions.length && testStage === "qcm") {
     return (
       <div className="warning-container">
         <Alert variant="warning" className="warning-alert">
@@ -397,91 +449,92 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
 
   return (
-    <div className="test-content">
-      {/* Progress bar with improved visual feedback */}
-      <div className="progress-container">
-        <div className="progress-header">
-          <h3 className="progress-title">
-            Question {currentQuestionIndex + 1} sur {questions.length}
-          </h3>
-          <span className="progress-percentage">{Math.round(progress)}% complété</span>
+    <TestSecurity onViolation={handleSecurityViolation} maxViolations={5}>
+      <div className="test-content">
+        {/* Progress bar with improved visual feedback */}
+        <div className="progress-container">
+          <div className="progress-header">
+            <h3 className="progress-title">
+              Question {currentQuestionIndex + 1} sur {questions.length}
+            </h3>
+            <span className="progress-percentage">{Math.round(progress)}% complété</span>
+          </div>
+          <div className="progress-bar-container">
+            <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+          </div>
         </div>
-        <div className="progress-bar-container">
-          <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+
+        {/* Question card with improved styling */}
+        <div className="question-card">
+          <h4 className="question-text">{currentQuestion.question}</h4>
+
+          <div className="options-container">
+            {currentQuestion.options.map((option, index) => (
+              <div
+                key={index}
+                className={`option-item ${selectedOption === option ? "selected" : ""}`}
+                onClick={() => handleOptionSelect(option)}
+              >
+                <div className="option-content">
+                  <div className="option-radio">
+                    {selectedOption === option && <div className="option-radio-inner"></div>}
+                  </div>
+                  <span className="option-text">{option.text}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {error && (
+            <Alert variant="destructive" className="error-message">
+              <AlertCircle className="error-icon-small" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Navigation buttons with improved layout */}
+          <div className="navigation-buttons">
+            <Button
+              variant="outline"
+              onClick={goToPreviousQuestion}
+              disabled={currentQuestionIndex === 0 || submitting}
+              className="prev-button"
+            >
+              Question précédente
+            </Button>
+
+            <Button onClick={goToNextQuestion} disabled={!selectedOption || submitting} className="next-button">
+              {submitting ? (
+                <>
+                  <span className="loading-spinner-small"></span>
+                  Traitement...
+                </>
+              ) : currentQuestionIndex === questions.length - 1 ? (
+                "Passer à l'analyse d'image"
+              ) : (
+                "Question suivante"
+              )}
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Question card with improved styling */}
-      <div className="question-card">
-        <h4 className="question-text">{currentQuestion.question}</h4>
-
-        <div className="options-container">
-          {currentQuestion.options.map((option, index) => (
+        {/* Question counter pills */}
+        <div className="question-pills">
+          {questions.map((_, index) => (
             <div
               key={index}
-              className={`option-item ${selectedOption === option ? "selected" : ""}`}
-              onClick={() => handleOptionSelect(option)}
+              className={`question-pill ${
+                index === currentQuestionIndex ? "current" : answers[index] ? "answered" : "unanswered"
+              }`}
+              onClick={() => navigateToQuestion(index)}
             >
-              <div className="option-content">
-                <div className="option-radio">
-                  {selectedOption === option && <div className="option-radio-inner"></div>}
-                </div>
-                <span className="option-text">{option.text}</span>
-              </div>
+              {index + 1}
             </div>
           ))}
         </div>
-
-        {error && (
-          <Alert variant="destructive" className="error-message">
-            <AlertCircle className="error-icon-small" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Navigation buttons with improved layout */}
-        <div className="navigation-buttons">
-          <Button
-            variant="outline"
-            onClick={goToPreviousQuestion}
-            disabled={currentQuestionIndex === 0 || submitting}
-            className="prev-button"
-          >
-            Question précédente
-          </Button>
-
-          <Button onClick={goToNextQuestion} disabled={!selectedOption || submitting} className="next-button">
-            {submitting ? (
-              <>
-                <span className="loading-spinner-small"></span>
-                Traitement...
-              </>
-            ) : currentQuestionIndex === questions.length - 1 ? (
-              "Terminer le test"
-            ) : (
-              "Question suivante"
-            )}
-          </Button>
-        </div>
       </div>
-
-      {/* Question counter pills */}
-      <div className="question-pills">
-        {questions.map((_, index) => (
-          <div
-            key={index}
-            className={`question-pill ${
-              index === currentQuestionIndex ? "current" : answers[index] ? "answered" : "unanswered"
-            }`}
-            onClick={() => navigateToQuestion(index)}
-          >
-            {index + 1}
-          </div>
-        ))}
-      </div>
-    </div>
+    </TestSecurity>
   )
 }
 
 export default PersonalityTest
-
