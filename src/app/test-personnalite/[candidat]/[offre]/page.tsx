@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { AlertCircle, ArrowLeft, CheckCircle2, Home } from "lucide-react"
+import { AlertCircle, ArrowLeft, CheckCircle2, Home, Info } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import Header from "../../../components/index/header"
 import Footer from "../../../components/index/footer"
@@ -26,6 +26,8 @@ export default function TestPersonnalitePage({
   const [offreDetails, setOffreDetails] = useState<any>(null)
   const [testCompleted, setTestCompleted] = useState(false)
   const [securityViolations, setSecurityViolations] = useState<Record<string, number>>({})
+  const [alreadyTakenTest, setAlreadyTakenTest] = useState(false)
+  const [previousScore, setPreviousScore] = useState<number | null>(null)
 
   // Parse IDs from params, ensuring they're valid numbers
   const candidatId = candidat ? Number.parseInt(candidat, 10) : null
@@ -37,6 +39,40 @@ export default function TestPersonnalitePage({
       setError("Identifiants de candidat ou d'offre invalides")
       setLoading(false)
       return
+    }
+
+    // Check if the test has already been taken
+    const checkTestStatus = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/generate-test", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            candidat_id: candidatId,
+            offre_id: offreId,
+          }),
+        })
+
+        const data = await response.json()
+
+        // If the response contains an error about already taking the test
+        if (!response.ok && data.error && data.error.includes("déjà passé le test")) {
+          setAlreadyTakenTest(true)
+          if (data.score) {
+            setPreviousScore(data.score)
+          }
+          setLoading(false)
+          return
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification du statut du test:", error)
+        // Continue with fetching job details even if this check fails
+      }
+
+      // Fetch job details
+      fetchOffreDetails()
     }
 
     // Fetch job details
@@ -56,8 +92,9 @@ export default function TestPersonnalitePage({
       }
     }
 
-    fetchOffreDetails()
-  }, [candidatId, offreId, candidat, offre])
+    // Start by checking test status
+    checkTestStatus()
+  }, [candidatId, offreId])
 
   const handleTestComplete = () => {
     setTestCompleted(true)
@@ -154,6 +191,27 @@ export default function TestPersonnalitePage({
                     <Button onClick={() => router.push("/jobs")}>Retour aux offres d'emploi</Button>
                   </div>
                 </div>
+              ) : alreadyTakenTest ? (
+                <div className="already-taken-container">
+                  <Alert variant="info" className="already-taken-alert">
+                    <Info className="already-taken-icon" />
+                    <AlertTitle>Test déjà complété</AlertTitle>
+                    <AlertDescription>
+                      Vous avez déjà passé le test de personnalité pour cette offre.
+                      {previousScore !== null && (
+                        <span className="block mt-2">
+                          Votre score: <strong>{previousScore}</strong>
+                        </span>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                  <div className="already-taken-actions mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button onClick={() => router.push(`/jobsDetail/${offreId}`)} variant="outline">
+                      Retour à l'offre
+                    </Button>
+                    <Button onClick={() => router.push("/jobs")}>Voir d'autres offres</Button>
+                  </div>
+                </div>
               ) : hasTooManyViolations() ? (
                 <div className="error-container">
                   <Alert variant="destructive" className="error-alert">
@@ -232,7 +290,12 @@ export default function TestPersonnalitePage({
                   </div>
 
                   {candidatId && offreId ? (
-                    <PersonalityTest candidatId={candidatId} offreId={offreId} onTestComplete={handleTestComplete} />
+                    <PersonalityTest
+                      candidatId={candidatId}
+                      offreId={offreId}
+                      onTestComplete={handleTestComplete}
+                      onSecurityViolation={handleSecurityViolation}
+                    />
                   ) : (
                     <Alert variant="destructive">
                       <AlertCircle className="error-icon" />

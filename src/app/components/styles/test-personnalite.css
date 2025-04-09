@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
 
 /* Base styles */
 .personality-test-page {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -89,7 +89,7 @@
 }
 
 .page-title {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 2rem;
   font-weight: 700;
   color: #0c4a6e;
@@ -162,8 +162,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-text {
@@ -218,7 +222,7 @@
 }
 
 .success-title {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 1.5rem;
   font-weight: 700;
   color: #0c4a6e;
@@ -260,7 +264,7 @@
 }
 
 .instructions-title {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 1.25rem;
   font-weight: 600;
   color: #0c4a6e;
@@ -287,7 +291,7 @@
 }
 
 .progress-title {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-weight: 600;
   color: #0c4a6e;
 }
@@ -322,7 +326,7 @@
 }
 
 .question-text {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 1.25rem;
   font-weight: 500;
   color: #0c4a6e;
@@ -508,4 +512,29 @@
 
 .test-content {
   width: 100%;
+}
+
+/* Already taken test styles */
+.already-taken-container {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.already-taken-alert {
+  background-color: #eff6ff;
+  border-color: #dbeafe;
+  margin-bottom: 1.5rem;
+}
+
+.already-taken-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #2563eb;
+}
+
+.already-taken-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
