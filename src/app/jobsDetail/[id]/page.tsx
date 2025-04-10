@@ -66,6 +66,8 @@ export default function JobDetailPage({
   const [success, setSuccess] = useState(false)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [candidatId, setCandidatId] = useState<number | null>(null)
+  const [matchingScore, setMatchingScore] = useState<number | null>(null)
+  const [calculatingScore, setCalculatingScore] = useState(false)
 
   useEffect(() => {
     // Fetch job details
@@ -157,6 +159,7 @@ export default function JobDetailPage({
     setFile(null)
     setError(null)
     setSuccess(false)
+    setMatchingScore(null)
   }
 
   // Récupérer l'ID du candidat à partir de l'email
@@ -190,15 +193,57 @@ export default function JobDetailPage({
     }
   }
 
+  // Calculer le score de matching
+  const calculateMatchingScore = async (candidatId, offreId) => {
+    try {
+      console.log(`Calcul du score de matching pour candidat=${candidatId}, offre=${offreId}`)
+      setCalculatingScore(true)
+
+      const response = await fetch(`http://127.0.0.1:8000/api/matching-score`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          candidat_id: candidatId,
+          offre_id: offreId,
+        }),
+      })
+
+      const data = await response.json()
+      console.log(`Réponse du calcul de matching: ${JSON.stringify(data)}`)
+
+      if (response.ok) {
+        if (data.matching_score && data.matching_score.matching_score) {
+          setMatchingScore(data.matching_score.matching_score)
+          console.log(`Score de matching calculé: ${data.matching_score.matching_score}`)
+          return data.matching_score.matching_score
+        }
+      } else {
+        console.error(`Erreur lors du calcul du score: ${data.error || "Erreur inconnue"}`)
+      }
+
+      return null
+    } catch (error) {
+      console.error(`Erreur lors du calcul du score de matching: ${error.message}`)
+      return null
+    } finally {
+      setCalculatingScore(false)
+    }
+  }
+
   // Rediriger vers le test de personnalité
   function showTestDirectly() {
     try {
       // Récupérer l'ID du candidat à partir de l'email
       fetchCandidatIdByEmail(formData.email).then((candidatId) => {
         if (candidatId) {
-          // Rediriger vers la page de test avec les IDs
-          console.log(`Redirection vers le test avec candidatId=${candidatId}, offreId=${formData.offre_id}`)
-          window.location.href = `/test-personnalite/${candidatId}/${formData.offre_id}`
+          // Calculer le score de matching avant de rediriger
+          calculateMatchingScore(candidatId, formData.offre_id).then(() => {
+            // Rediriger vers la page de test avec les IDs
+            console.log(`Redirection vers le test avec candidatId=${candidatId}, offreId=${formData.offre_id}`)
+            window.location.href = `/test-personnalite/${candidatId}/${formData.offre_id}`
+          })
         } else {
           // Si l'API ne retourne pas d'ID candidat, utiliser un ID par défaut pour les tests
           // IMPORTANT: Remplacer ces valeurs par des IDs valides dans votre base de données
@@ -206,7 +251,9 @@ export default function JobDetailPage({
           const defaultOffreId = formData.offre_id || 1 // Utiliser l'ID de l'offre actuelle ou 1 par défaut
 
           console.log(`Utilisation des IDs par défaut: candidat=${defaultCandidatId}, offre=${defaultOffreId}`)
-          window.location.href = `/test-personnalite/${defaultCandidatId}/${defaultOffreId}`
+          calculateMatchingScore(defaultCandidatId, defaultOffreId).then(() => {
+            window.location.href = `/test-personnalite/${defaultCandidatId}/${defaultOffreId}`
+          })
         }
       })
     } catch (error) {
@@ -289,6 +336,9 @@ export default function JobDetailPage({
           const candidatIdValue = data.candidat.id
           console.log(`ID du candidat récupéré: ${candidatIdValue}`)
           setCandidatId(candidatIdValue)
+
+          // Calculer le score de matching
+          await calculateMatchingScore(candidatIdValue, formData.offre_id)
 
           // Show the personality test after a short delay
           setTimeout(() => {
@@ -529,15 +579,26 @@ export default function JobDetailPage({
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <AlertTitle className="text-green-800">Candidature envoyée</AlertTitle>
                 <AlertDescription className="text-green-700">
-                  Votre candidature a été envoyée avec succès. Veuillez patienter pendant que nous préparons votre test
-                  de personnalité...
+                  Votre candidature a été envoyée avec succès. Veuillez patienter s'il vous plaît pendant que nous
+                  préparons votre test de personnalité...
                 </AlertDescription>
               </Alert>
 
               {/* Bouton pour forcer l'affichage du test */}
               <div className="flex justify-center mt-4">
-                <Button onClick={showTestDirectly} className="bg-blue-500 hover:bg-blue-600">
-                  Passer au test de personnalité
+                <Button
+                  onClick={showTestDirectly}
+                  className="bg-blue-500 hover:bg-blue-600"
+                  disabled={calculatingScore}
+                >
+                  {calculatingScore ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                      Veuillez patienter...
+                    </>
+                  ) : (
+                    "Passer au test de personnalité"
+                  )}
                 </Button>
               </div>
             </div>
