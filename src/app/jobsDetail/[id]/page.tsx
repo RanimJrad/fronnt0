@@ -34,6 +34,7 @@ interface OffreDetail {
   dateExpiration: string
   statut: "urgent" | "normal"
   domaine: string
+  matching?: number // Added matching threshold field
 }
 
 export default function JobDetailPage({
@@ -68,6 +69,8 @@ export default function JobDetailPage({
   const [candidatId, setCandidatId] = useState<number | null>(null)
   const [matchingScore, setMatchingScore] = useState<number | null>(null)
   const [calculatingScore, setCalculatingScore] = useState(false)
+  const [showMatchingErrorDialog, setShowMatchingErrorDialog] = useState(false) // New state for matching error dialog
+  const [matchingErrorMessage, setMatchingErrorMessage] = useState("") // New state for matching error message
 
   useEffect(() => {
     // Fetch job details
@@ -320,10 +323,21 @@ export default function JobDetailPage({
 
       if (!response.ok) {
         // Check if the error is about already applied
-        if (data.error && data.error === "Vous avez déjà postulé à cette offre.") {
-          // Don't set this as an error, just show the info dialog
-          setShowErrorDialog(true)
-          // Don't throw an error in this case
+        if (data.error && data.error.includes("Vous avez déjà postulé à cette offre")) {
+          // Fermer le modal du formulaire et afficher la popup d'erreur
+          setShowForm(false)
+          setTimeout(() => {
+            setShowErrorDialog(true)
+          }, 300) // Petit délai pour permettre au modal de se fermer d'abord
+        }
+        // Check if the error is about matching score
+        else if (data.error && data.error.includes("score de matching")) {
+          // Fermer le modal du formulaire et afficher la popup d'erreur de matching
+          setShowForm(false)
+          setMatchingErrorMessage(data.error)
+          setTimeout(() => {
+            setShowMatchingErrorDialog(true)
+          }, 300) // Petit délai pour permettre au modal de se fermer d'abord
         } else {
           setError(data.error || "Erreur lors de l'envoi de la candidature")
           throw new Error(data.error || "Erreur lors de l'envoi de la candidature")
@@ -332,8 +346,8 @@ export default function JobDetailPage({
         setSuccess(true)
 
         // Vérifier si l'ID du candidat est présent dans la réponse
-        if (data.candidat && data.candidat.id) {
-          const candidatIdValue = data.candidat.id
+        if (data.id) {
+          const candidatIdValue = data.id
           console.log(`ID du candidat récupéré: ${candidatIdValue}`)
           setCandidatId(candidatIdValue)
 
@@ -765,32 +779,21 @@ export default function JobDetailPage({
 
       {/* Error Dialog for Already Applied */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-blue-600">Information</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-red-600">Candidature existante</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <Alert className="mb-4 border-blue-200 bg-blue-50">
-              <AlertCircle className="h-5 w-5 text-blue-600" />
-              <AlertTitle className="text-blue-800">Candidature existante</AlertTitle>
-              <AlertDescription className="text-blue-700">
-                Vous avez déjà postulé à cette offre avec cet e-mail.
+          <div className="py-6">
+            <Alert className="mb-4 border-red-200 bg-red-50" variant="destructive">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <AlertTitle className="text-red-800">Information</AlertTitle>
+              <AlertDescription className="text-red-700">
+                Vous avez déjà postulé à cette offre. Vous ne pouvez postuler qu'une seule fois par offre.
               </AlertDescription>
             </Alert>
-            <p className="text-sm text-muted-foreground mb-4">Veuillez contacter notre équipe de recrutement.</p>
-
-            {/* Bouton pour afficher le test même si déjà postulé */}
-            <div className="flex justify-center mt-2">
-              <Button
-                onClick={() => {
-                  setShowErrorDialog(false)
-                  showTestDirectly()
-                }}
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                Passer au test de personnalité
-              </Button>
-            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Si vous souhaitez mettre à jour votre candidature, veuillez contacter notre équipe de recrutement.
+            </p>
           </div>
           <div className="flex justify-end">
             <Button
@@ -800,6 +803,36 @@ export default function JobDetailPage({
               }}
             >
               Fermer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Dialog for Matching Score Error */}
+      <Dialog open={showMatchingErrorDialog} onOpenChange={setShowMatchingErrorDialog}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-red-600">Candidature non retenue</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Alert className="mb-4 border-red-200 bg-red-50" variant="destructive">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <AlertTitle className="text-red-800">Profil incompatible</AlertTitle>
+              <AlertDescription className="text-red-700">{matchingErrorMessage}</AlertDescription>
+            </Alert>
+            <p className="text-sm text-gray-700 mb-4">
+              Nous sommes désolés, mais votre profil ne correspond pas aux exigences minimales pour ce poste. Nous vous
+              encourageons à consulter d'autres offres qui pourraient mieux correspondre à vos compétences.
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <Button
+              onClick={() => {
+                setShowMatchingErrorDialog(false)
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Compris
             </Button>
           </div>
         </DialogContent>

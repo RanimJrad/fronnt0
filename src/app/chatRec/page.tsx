@@ -22,7 +22,7 @@ export default function ChatRecPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight">Disscusion</h1>
-                  <p className="text-muted-foreground">Suivre les message de admin</p>
+                  <p className="text-muted-foreground">Suivre les messages de l'admin</p>
                 </div>   
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
