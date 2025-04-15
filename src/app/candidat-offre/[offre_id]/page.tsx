@@ -1,11 +1,14 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
 import {
   User,
   Mail,
@@ -18,6 +21,8 @@ import {
   Clock,
   MapPin,
   GraduationCap,
+  Search,
+  X,
 } from "lucide-react"
 import { DashboardHeaderRec } from "@/app/components/recruteur/dashboard-header_rec"
 import { DashboardSidebarRec } from "@/app/components/recruteur/dashboard-sidebar_rec"
@@ -71,6 +76,11 @@ export default function CandidatOffrePage({ params }: { params: Promise<{ offre_
   const [error, setError] = useState<string | null>(null)
   const [offre, setOffre] = useState<Offre | null>(null)
 
+  // États pour la recherche
+  const [searchTerm, setSearchTerm] = useState("")
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [filteredCandidats, setFilteredCandidats] = useState<Candidat[]>([])
+
   useEffect(() => {
     const fetchCandidats = async () => {
       try {
@@ -112,6 +122,7 @@ export default function CandidatOffrePage({ params }: { params: Promise<{ offre_
         })
 
         setCandidats(sortedCandidats)
+        setFilteredCandidats(sortedCandidats)
 
         // Extraire les informations de l'offre du premier candidat s'il existe
         if (data.length > 0 && data[0].offre) {
@@ -128,9 +139,84 @@ export default function CandidatOffrePage({ params }: { params: Promise<{ offre_
     fetchCandidats()
   }, [offre_id, router])
 
+  // Filtrer les candidats en fonction du terme de recherche
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredCandidats(candidats)
+      return
+    }
+
+    const normalizedSearchTerm = searchTerm
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+
+    const filtered = candidats.filter((candidat) => {
+      const normalizedNom = candidat.nom
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+      const normalizedPrenom = candidat.prenom
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+      const fullName = `${normalizedPrenom} ${normalizedNom}`
+
+      return (
+        normalizedNom.includes(normalizedSearchTerm) ||
+        normalizedPrenom.includes(normalizedSearchTerm) ||
+        fullName.includes(normalizedSearchTerm)
+      )
+    })
+
+    setFilteredCandidats(filtered)
+  }, [searchTerm, candidats])
+
+  // Obtenir les suggestions pour l'autocomplétion
+  const getSuggestions = () => {
+    if (searchTerm.trim() === "") return []
+
+    const normalizedSearchTerm = searchTerm
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+
+    return candidats
+      .filter((candidat) => {
+        const normalizedNom = candidat.nom
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+        const normalizedPrenom = candidat.prenom
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+
+        return normalizedNom.includes(normalizedSearchTerm) || normalizedPrenom.includes(normalizedSearchTerm)
+      })
+      .slice(0, 5) // Limiter à 5 suggestions
+  }
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
+    setShowSuggestions(true)
+  }
+
+  const handleSuggestionClick = (candidat: Candidat) => {
+    setSearchTerm(`${candidat.prenom} ${candidat.nom}`)
+    setShowSuggestions(false)
+  }
+
+  const clearSearch = () => {
+    setSearchTerm("")
+    setFilteredCandidats(candidats)
+  }
+
   const handleRetour = () => {
     router.back()
   }
+
+  const suggestions = getSuggestions()
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -178,6 +264,52 @@ export default function CandidatOffrePage({ params }: { params: Promise<{ offre_
               </div>
             </div>
 
+            {/* Barre de recherche */}
+            {!loading && !error && candidats.length > 0 && (
+              <div className="relative">
+                <div className="flex items-center border rounded-lg overflow-hidden bg-white shadow-sm">
+                  <div className="pl-3 text-gray-400">
+                    <Search className="h-5 w-5" />
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Rechercher par nom ou prénom..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => {
+                      // Délai pour permettre le clic sur une suggestion
+                      setTimeout(() => setShowSuggestions(false), 200)
+                    }}
+                  />
+                  {searchTerm && (
+                    <Button variant="ghost" size="icon" onClick={clearSearch} className="h-9 w-9 mr-1">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* Liste de suggestions */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-auto">
+                    {suggestions.map((candidat) => (
+                      <div
+                        key={candidat.id}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                        onMouseDown={() => handleSuggestionClick(candidat)}
+                      >
+                        <User className="h-4 w-4 mr-2 text-gray-500" />
+                        <span>
+                          {candidat.prenom} {candidat.nom}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -215,11 +347,21 @@ export default function CandidatOffrePage({ params }: { params: Promise<{ offre_
                   </TabsList>
 
                   <TabsContent value="tous" className="pt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {candidats.map((candidat) => (
-                        <CandidatCard key={candidat.id} candidat={candidat} />
-                      ))}
-                    </div>
+                    {filteredCandidats.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <AlertCircle className="h-12 w-12 text-amber-500 mb-4" />
+                        <p className="text-xl font-medium">Aucun candidat ne correspond à votre recherche</p>
+                        <Button onClick={clearSearch} className="mt-6">
+                          Réinitialiser la recherche
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {filteredCandidats.map((candidat) => (
+                          <CandidatCard key={candidat.id} candidat={candidat} />
+                        ))}
+                      </div>
+                    )}
                   </TabsContent>
                 </Tabs>
               </div>

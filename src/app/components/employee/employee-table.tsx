@@ -192,16 +192,21 @@ export function ReviewsTable({
             <CardContent className="card-content">
               <h3 className="user-name">{user.nom_societe}</h3>
 
-              <Badge className="user-badge">{user.numTel || "Non spécifié"}</Badge>
+              <Badge
+                className="user-badge cursor-pointer hover:bg-blue-700"
+                onClick={() => window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${user.email}`, "_blank")}
+              >
+                {user.email || "Email non spécifié"}
+              </Badge>
 
               <div className="user-details">
                 <div className="detail-row">
-                  <span className="detail-label">Email:</span>
+                  <span className="detail-label">Site web:</span>
                   <span
                     className="detail-value cursor-pointer text-blue-600 hover:underline"
-                    onClick={() => window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${user.email}`, "_blank")}
+                    onClick={() => user.lien_site_web && window.open(user.lien_site_web, "_blank")}
                   >
-                    {user.email}
+                    {user.lien_site_web || "Non spécifié"}
                   </span>
                 </div>
                 <div className="detail-row">

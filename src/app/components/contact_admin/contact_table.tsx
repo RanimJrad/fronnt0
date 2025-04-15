@@ -40,6 +40,9 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
   const [deleting, setDeleting] = useState<number | null>(null)
   const [messageToDelete, setMessageToDelete] = useState<number | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
+  const [selectionMode, setSelectionMode] = useState<boolean>(false)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState<boolean>(false)
 
   useEffect(() => {
     fetchMessages()
@@ -198,6 +201,73 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
     }
   }
 
+  // Fonctions pour la sélection multiple
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode)
+    setSelectedIds([])
+  }
+
+  const toggleSelectItem = (id: number) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]))
+  }
+
+  const selectAll = () => {
+    if (selectedIds.length === messages.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(messages.map((m) => m.id))
+    }
+  }
+
+  const confirmBatchDelete = () => {
+    if (selectedIds.length === 0) return
+    setBatchDeleteDialogOpen(true)
+  }
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.length === 0) return
+
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        setError("Vous devez être connecté pour supprimer des messages.")
+        setBatchDeleteDialogOpen(false)
+        return
+      }
+
+      setDeleting(-1) // Utiliser -1 pour indiquer une suppression par lot
+
+      // Supprimer chaque message sélectionné
+      const promises = selectedIds.map((id) =>
+        fetch(`http://127.0.0.1:8000/api/deleteContact/${id}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      )
+
+      await Promise.all(promises)
+
+      // Mettre à jour l'état local
+      setMessages(messages.filter((message) => !selectedIds.includes(message.id)))
+
+      setSelectedIds([])
+      setSelectionMode(false)
+      setBatchDeleteDialogOpen(false)
+    } catch (error) {
+      console.error("Erreur de suppression par lot:", error)
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la suppression des messages. Vérifiez la console pour plus de détails.",
+      )
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   if (loading) return <div className="p-4 text-gray-600 font-medium text-center">Chargement des messages...</div>
   if (error) return <div className="p-4 text-red-500 font-medium text-center">{error}</div>
   if (messages.length === 0)
@@ -210,31 +280,78 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
         <p className="text-muted-foreground mt-1">Consultez et répondez aux messages de vos clients et candidats.</p>
       </div>
 
+      <div className="flex justify-between items-center mb-4">
+        <Button variant="outline" onClick={toggleSelectionMode} className="text-xs">
+          {selectionMode ? "Annuler la sélection" : "Sélectionner des messages"}
+        </Button>
+
+        {selectionMode && (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="selectAll"
+                checked={selectedIds.length === messages.length && messages.length > 0}
+                onChange={selectAll}
+                className="mr-2 h-4 w-4"
+              />
+              <label htmlFor="selectAll" className="text-sm">
+                Tout sélectionner ({selectedIds.length}/{messages.length})
+              </label>
+            </div>
+
+            {selectedIds.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={confirmBatchDelete}
+                className="text-xs"
+                disabled={selectedIds.length === 0}
+              >
+                Supprimer ({selectedIds.length})
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {messages.map((message) => (
           <Card
             key={message.id}
             className={`overflow-hidden transition-all duration-300 hover:shadow-lg ${
               message.repondu ? "border-l-4 border-l-green-500" : "border-l-4 border-l-blue-500"
-            } h-[360px] flex flex-col bg-white dark:bg-gray-900`}
+            } h-[400px] flex flex-col bg-white dark:bg-gray-900 ${
+              selectedIds.includes(message.id) ? "ring-2 ring-primary" : ""
+            }`}
           >
             <CardHeader className="pb-2 pt-4">
-              <div className="flex items-center">
-                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-primary/80 to-primary text-primary-foreground font-semibold text-sm shadow-sm">
-                  {message.nom.substring(0, 2).toUpperCase()}
-                </div>
-                <div className="ml-3">
-                  <h3 className="font-semibold text-lg">{message.nom}</h3>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Mail className="h-3.5 w-3.5 mr-1" />
-                    <a href={`mailto:${message.email}`} className="hover:underline truncate max-w-[180px]">
-                      {message.email}
-                    </a>
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center">
+                  {selectionMode && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(message.id)}
+                      onChange={() => toggleSelectItem(message.id)}
+                      className="h-4 w-4 mr-2"
+                    />
+                  )}
+                  <div className="flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-primary/80 to-primary text-primary-foreground font-semibold text-sm shadow-sm">
+                    {message.nom.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="font-semibold text-lg">{message.nom}</h3>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5 mr-1" />
+                      <a href={`mailto:${message.email}`} className="hover:underline truncate max-w-[180px]">
+                        {message.email}
+                      </a>
+                    </div>
                   </div>
                 </div>
-                <div className="ml-auto">
+                <div className="flex justify-end">
                   {message.repondu ? (
-                    <Badge variant="outline" className="  bg-green-100 text-green-800 border-green-200 flex items-center">
+                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 flex items-center">
                       <CheckCircle className="w-3.5 h-3.5 mr-1" /> Répondu
                     </Badge>
                   ) : (
@@ -301,6 +418,8 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
           </Card>
         ))}
       </div>
+
+      {/* Dialogue de confirmation de suppression individuelle */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md rounded-lg">
           <DialogHeader>
@@ -324,9 +443,33 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialogue de confirmation de suppression par lot */}
+      <Dialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Confirmer la suppression multiple</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Êtes-vous sûr de vouloir supprimer {selectedIds.length} message(s) ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-between sm:justify-between gap-4 pt-4">
+            <Button variant="outline" onClick={() => setBatchDeleteDialogOpen(false)} className="flex-1">
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleBatchDelete}
+              disabled={deleting !== null}
+              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+            >
+              {deleting === -1 ? "Suppression..." : `Supprimer (${selectedIds.length})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
 export default MessagesTable
-

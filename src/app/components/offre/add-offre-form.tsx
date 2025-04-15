@@ -158,8 +158,8 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
   const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({})
 
   // État pour les champs personnalisés
-  const [customDomaine, setCustomPoste] = useState<string>("")
-  const [customPoste, setCustomDomaine] = useState<string>("")
+  const [customDomaine, setCustomDomaine] = useState<string>("")
+  const [customPoste, setCustomPoste] = useState<string>("")
 
   const [formData, setFormData] = useState({
     departement: "",
