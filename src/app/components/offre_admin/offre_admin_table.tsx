@@ -84,7 +84,7 @@ export function OffreAdminTable({
 
   const fetchOffres = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour voir les offres.")
         return
@@ -100,7 +100,7 @@ export function OffreAdminTable({
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token")
+          sessionStorage.removeItem("token")
           router.push("/auth/login")
           return
         }
@@ -138,7 +138,7 @@ export function OffreAdminTable({
   const handleValider = async (offreId: number) => {
     setProcessing(offreId)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour valider une offre.")
         return
@@ -169,7 +169,7 @@ export function OffreAdminTable({
   const handleSupprimer = async (offreId: number) => {
     setProcessing(offreId)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour supprimer une offre.")
         return
@@ -252,7 +252,7 @@ export function OffreAdminTable({
 
   // Confirm batch validation
   const confirmBatchValidate = async () => {
-    const token = localStorage.getItem("token")
+    const token = sessionStorage.getItem("token")
     if (!token) {
       setIsBatchValidateDialogOpen(false)
       setError("Vous devez être connecté pour valider des offres.")
@@ -307,7 +307,7 @@ export function OffreAdminTable({
 
   // Confirm batch deletion
   const confirmBatchDelete = async () => {
-    const token = localStorage.getItem("token")
+    const token = sessionStorage.getItem("token")
     if (!token) {
       setIsBatchDeleteDialogOpen(false)
       setError("Vous devez être connecté pour supprimer des offres.")

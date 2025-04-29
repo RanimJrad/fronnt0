@@ -65,7 +65,7 @@ export function ReviewsTable({
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem("token")
+        const token = sessionStorage.getItem("token")
         if (!token) {
           setError("Vous devez être connecté pour voir les utilisateurs.")
           return
@@ -81,7 +81,7 @@ export function ReviewsTable({
 
         if (!response.ok) {
           if (response.status === 401) {
-            localStorage.removeItem("token")
+            sessionStorage.removeItem("token")
             router.push("/auth/login")
             return
           }
@@ -117,7 +117,7 @@ export function ReviewsTable({
   const confirmArchive = async () => {
     if (!userToArchive) return
 
-    const token = localStorage.getItem("token")
+    const token = sessionStorage.getItem("token")
     if (!token) {
       setError("Vous devez être connecté pour archiver un utilisateur.")
       setIsArchiveDialogOpen(false)

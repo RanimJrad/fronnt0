@@ -50,7 +50,7 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
 
   const fetchMessages = async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour voir les messages.")
         return
@@ -67,7 +67,7 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
       // Check if response is ok before trying to parse JSON
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token")
+          sessionStorage.removeItem("token")
           router.push("/auth/login")
           return
         }
@@ -107,7 +107,7 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
       window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, "_blank")
 
       // Marquer le message comme répondu dans la base de données
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour marquer un message comme répondu.")
         return
@@ -161,7 +161,7 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
     setDeleteDialogOpen(false)
 
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour supprimer un message.")
         return
@@ -228,7 +228,7 @@ const MessagesTable: React.FC<MessagesTableProps> = ({ refresh }) => {
     if (selectedIds.length === 0) return
 
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour supprimer des messages.")
         setBatchDeleteDialogOpen(false)

@@ -1,15 +1,64 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardSidebar } from "../components/dashboard-sidebar"
 import { ReviewsTabs } from "../components/archive/archive_tabs"
 
 export default function ReviewsPage() {
+  const router = useRouter()
   const [refreshTrigger, setRefreshTrigger] = useState(false)
+  const [shouldRender, setShouldRender] = useState(false)
 
   const handleRecruiterAdded = () => {
     setRefreshTrigger((prev) => !prev)
+  }
+
+  useEffect(() => {
+    // Vérifier le rôle de l'utilisateur avant de rendre la page
+    const checkUserRole = async () => {
+      try {
+        const token = sessionStorage.getItem("token")
+        if (!token) {
+          // Rediriger vers la page de connexion si pas de token
+          router.push("/")
+          return
+        }
+
+        const response = await fetch("http://127.0.0.1:8000/api/users/profile", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error("Erreur lors de la récupération des données")
+        }
+
+        const userData = await response.json()
+
+        // Si l'utilisateur est un admin, autoriser le rendu de la page
+        if (userData.role === "admin") {
+          setShouldRender(true)
+        } else {
+          // Si autre rôle, rediriger vers la page d'accueil
+          router.push("/dashbord_rec")
+        }
+      } catch (error) {
+        console.error("Erreur:", error)
+        // En cas d'erreur, rediriger vers la page d'accueil
+        router.push("/")
+      }
+    }
+
+    checkUserRole()
+  }, [router])
+
+  // Ne rien afficher jusqu'à ce que la vérification soit terminée
+  if (!shouldRender) {
+    return null
   }
 
   return (
@@ -31,7 +80,6 @@ export default function ReviewsPage() {
                 <h1 className="text-3xl font-bold tracking-tight">Comptes Archivé</h1>
                 <p className="text-muted-foreground">Suivre les comptes archivé</p>
               </div>
-              
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -43,4 +91,3 @@ export default function ReviewsPage() {
     </div>
   )
 }
-

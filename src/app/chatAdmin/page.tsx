@@ -1,9 +1,61 @@
 "use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import ChatPage from "../components/chat/chat-page"
 import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardSidebar } from "../components/dashboard-sidebar"
 
 export default function ChatAdminPage() {
+  const router = useRouter()
+  const [shouldRender, setShouldRender] = useState(false)
+
+  useEffect(() => {
+    // Vérifier le rôle de l'utilisateur avant de rendre la page
+    const checkUserRole = async () => {
+      try {
+        const token = sessionStorage.getItem("token")
+        if (!token) {
+          // Rediriger vers la page de connexion si pas de token
+          router.push("/")
+          return
+        }
+
+        const response = await fetch("http://127.0.0.1:8000/api/users/profile", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error("Erreur lors de la récupération des données")
+        }
+
+        const userData = await response.json()
+
+        // Si l'utilisateur est un admin, autoriser le rendu de la page
+        if (userData.role === "admin") {
+          setShouldRender(true)
+        } else {
+          // Si autre rôle, rediriger vers la page d'accueil
+          router.push("/dashbord_rec")
+        }
+      } catch (error) {
+        console.error("Erreur:", error)
+        // En cas d'erreur, rediriger vers la page d'accueil
+        router.push("/")
+      }
+    }
+
+    checkUserRole()
+  }, [router])
+
+  // Ne rien afficher jusqu'à ce que la vérification soit terminée
+  if (!shouldRender) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <DashboardHeader />

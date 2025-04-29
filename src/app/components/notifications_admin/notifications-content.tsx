@@ -1,44 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Bell, Search, CheckCircle, Filter } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Bell, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { useMediaQuery } from "@/app/hooks/use-media-query_notif"
-
-interface Notification {
-  id: number
-  type: string
-  message: string
-  data: any
-  read: boolean
-  created_at: string
-}
-
-interface User {
-  nom: string
-  prenom: string
-  image: string | null
-  role?: string
-}
+import { useNotifications } from "@/app/hooks/use-notifications"
 
 export default function NotificationsContent() {
-  const [user, setUser] = useState<User | null>(null)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
+
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("all")
 
   const isMobile = useMediaQuery("(max-width: 640px)")
-
-  useEffect(() => {
-    fetchAdminNotifications()
-  }, [])
 
   useEffect(() => {
     if (isMobile) {
@@ -64,81 +43,12 @@ export default function NotificationsContent() {
     }
   }, [isMobile])
 
-  const fetchAdminNotifications = () => {
-    fetch("http://127.0.0.1:8000/api/notifications", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        Accept: "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`)
-        }
-        return response.text().then((text) => {
-          try {
-            return text ? JSON.parse(text) : {}
-          } catch (e) {
-            console.error("Error parsing JSON:", e, "Response was:", text)
-            return {}
-          }
-        })
-      })
-      .then((data) => {
-        console.log("Admin notifications received:", data)
-        // Ensure we're handling the data structure correctly
-        const notificationsArray = Array.isArray(data) ? data : data?.notifications || []
-        setNotifications(notificationsArray)
-        setUnreadCount(notificationsArray.filter((n: Notification) => !n.read).length || 0)
-
-        // Extract all unique notification types for filter
-        const types = [...new Set(notificationsArray.map((n: Notification) => n.type) || [])]
-        setSelectedTypes(types)
-      })
-      .catch((error) => {
-        console.error("Erreur lors de la récupération des notifications admin :", error)
-        setNotifications([])
-        setUnreadCount(0)
-      })
-  }
-
-  const handleNotificationClick = (notification: Notification) => {
-    // If notification is unread, mark it as read
-    if (!notification.read) {
-      fetch(`http://127.0.0.1:8000/api/notifications/${notification.id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          Accept: "application/json",
-        },
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`)
-          }
-          return response.text().then((text) => {
-            try {
-              return text ? JSON.parse(text) : {}
-            } catch (e) {
-              console.error("Error parsing JSON:", e, "Response was:", text)
-              return {}
-            }
-          })
-        })
-        .then(() => {
-          // Update local state
-          setNotifications(notifications.map((n) => (n.id === notification.id ? { ...n, read: true } : n)))
-          setUnreadCount(Math.max(0, unreadCount - 1))
-        })
-        .catch((error) => console.error("Erreur lors du marquage de la notification comme lue :", error))
-    }
-
-    // Navigate based on notification type for both read and unread notifications
+  const handleNotificationClick = (notification: any) => {
+    markAsRead(notification.id)
     handleNotificationNavigation(notification)
   }
 
-  const handleAdminNotificationNavigation = (notification: Notification) => {
+  const handleAdminNotificationNavigation = (notification: any) => {
     if (notification.type === "new_job_offer") {
       window.location.href = `/offre_admin`
     } else if (notification.type === "new_recruiter") {
@@ -150,43 +60,9 @@ export default function NotificationsContent() {
     }
   }
 
-  const handleNotificationNavigation = (notification: Notification) => {
+  const handleNotificationNavigation = (notification: any) => {
     // Check if user is admin or employee and navigate accordingly
     handleAdminNotificationNavigation(notification)
-  }
-
-  const markAllAsRead = () => {
-    fetch("http://127.0.0.1:8000/api/notifications", {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        Accept: "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`)
-        }
-        return response.text().then((text) => {
-          try {
-            return text ? JSON.parse(text) : {}
-          } catch (e) {
-            console.error("Error parsing JSON:", e, "Response was:", text)
-            return {}
-          }
-        })
-      })
-      .then(() => {
-        // Update local state
-        setNotifications(
-          notifications.map((notification) => ({
-            ...notification,
-            read: true,
-          })),
-        )
-        setUnreadCount(0)
-      })
-      .catch((error) => console.error("Erreur lors du marquage de toutes les notifications comme lues :", error))
   }
 
   const formatDate = (dateString: string) => {
@@ -218,7 +94,7 @@ export default function NotificationsContent() {
   }
 
   // Function to render notification details based on type
-  const renderNotificationDetails = (notification: Notification) => {
+  const renderNotificationDetails = (notification: any) => {
     // Admin notification types
     if (notification.type === "new_recruiter") {
       return (
@@ -293,7 +169,7 @@ export default function NotificationsContent() {
       JSON.stringify(notification.data).toLowerCase().includes(searchQuery.toLowerCase())
 
     // Filter by type
-    const matchesType = selectedTypes.includes(notification.type)
+    const matchesType = selectedTypes.length === 0 || selectedTypes.includes(notification.type)
 
     // Filter by tab
     const matchesTab =
@@ -305,7 +181,7 @@ export default function NotificationsContent() {
   })
 
   // Group notifications by date
-  const groupedNotifications: { [key: string]: Notification[] } = {}
+  const groupedNotifications: { [key: string]: any[] } = {}
   filteredNotifications.forEach((notification) => {
     const date = new Date(notification.created_at)
     const dateKey = date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
@@ -334,8 +210,6 @@ export default function NotificationsContent() {
   // Get unique notification types for filter
   const uniqueTypes = [...new Set(notifications.map((n) => n.type))]
 
-  const themeColor = "purple"
-
   return (
     <div className="container max-w-5xl py-4 sm:py-8 px-4 sm:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
@@ -350,20 +224,18 @@ export default function NotificationsContent() {
           <Button
             variant="outline"
             size="sm"
-            onClick={markAllAsRead}
+            onClick={() => markAllAsRead()}
             className={
               "text-purple-600 border-purple-200 hover:bg-purple-50 hover:text-purple-700 dark:text-purple-400 dark:border-purple-800 dark:hover:bg-purple-950 w-full sm:w-auto"
             }
           >
-            <CheckCircle className="h-4 w-4 mr-2" />
+            <Bell className="h-4 w-4 mr-2" />
             Tout marquer comme lu
           </Button>
         )}
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-       
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="w-full sm:w-auto mb-2 sm:mb-0">

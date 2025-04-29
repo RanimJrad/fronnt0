@@ -161,7 +161,7 @@ export function OffreTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
 
     setIsSearching(true)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         addNotification("Vous devez être connecté pour rechercher des offres.", "error")
         return
@@ -229,7 +229,7 @@ export function OffreTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
     // Rechercher toutes les offres avec ce nom de poste
     setIsSearching(true)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         addNotification("Vous devez être connecté pour rechercher des offres.", "error")
         return
@@ -346,7 +346,7 @@ export function OffreTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
     }
 
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         addNotification("Vous devez être connecté pour supprimer une offre.", "error")
         return

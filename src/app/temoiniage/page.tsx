@@ -36,6 +36,7 @@ export default function BlogSingle() {
       const data = await response.json()
 
       if (response.ok) {
+        
         setMessage("Votre témoignage a été envoyé avec succès !")
         setName("")
         setEmail("")

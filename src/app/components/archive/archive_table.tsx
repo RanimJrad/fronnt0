@@ -80,7 +80,7 @@ const ArchiveTable: React.FC<ArchiveTableProps> = ({
 
   const fetchArchivedUsers = async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour voir les utilisateurs.")
         return
@@ -96,7 +96,7 @@ const ArchiveTable: React.FC<ArchiveTableProps> = ({
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token")
+          sessionStorage.removeItem("token")
           router.push("/auth/login")
           return
         }
@@ -124,7 +124,7 @@ const ArchiveTable: React.FC<ArchiveTableProps> = ({
 
     setUnarchiving(userToUnarchive)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour désarchiver un utilisateur.")
         return

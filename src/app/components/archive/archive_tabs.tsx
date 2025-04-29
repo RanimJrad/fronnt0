@@ -86,7 +86,7 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
   const fetchAllArchivedUsers = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) return
 
       const response = await fetch("http://127.0.0.1:8000/api/users/archived", {
@@ -166,7 +166,7 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
 
     setUnarchiving(userToUnarchive)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) return
 
       const response = await fetch(`http://127.0.0.1:8000/api/users/unarchive/${userToUnarchive}`, {
@@ -237,7 +237,7 @@ export function ReviewsTabs({ refreshTrigger }: { refreshTrigger: boolean }) {
 
     setIsProcessing(true)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) return
 
       // Créer une copie des utilisateurs sélectionnés avant de les désarchiver

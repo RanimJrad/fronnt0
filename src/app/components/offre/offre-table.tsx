@@ -23,6 +23,7 @@ import {
   CheckSquare,
   Square,
   Loader2,
+  Sliders,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { OffreEditDialog } from "./offre-edit-dialog"
@@ -45,7 +46,12 @@ interface Offre {
   responsabilite: string
   experience: string
   valider: boolean
-  matching?: number // Add matching field
+  matching?: number
+  poids_ouverture?: number
+  poids_conscience?: number
+  poids_extraversion?: number
+  poids_agreabilite?: number
+  poids_stabilite?: number
 }
 
 function ConfirmationDialog({
@@ -121,7 +127,7 @@ export function OffreTable({
 
   const fetchOffres = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour voir les offres.")
         return
@@ -137,7 +143,7 @@ export function OffreTable({
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token")
+          sessionStorage.removeItem("token")
           router.push("/auth/login")
           return
         }
@@ -202,7 +208,7 @@ export function OffreTable({
     if (!selectedOffre) return
 
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour supprimer une offre.")
         return
@@ -273,7 +279,7 @@ export function OffreTable({
 
   // Confirm batch deletion
   const confirmBatchDelete = async () => {
-    const token = localStorage.getItem("token")
+    const token = sessionStorage.getItem("token")
     if (!token) {
       setIsBatchDeleteDialogOpen(false)
       setError("Vous devez être connecté pour supprimer des offres.")
@@ -551,6 +557,37 @@ export function OffreTable({
                       <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Date de publication</h4>
                       <p className="text-sm sm:text-base">{formatDate(offre.datePublication)}</p>
                     </div>
+
+                    {/* Traits de personnalité */}
+                    <div className="col-span-1 sm:col-span-2 md:col-span-3 mt-4">
+                      <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-3 flex items-center">
+                        <Sliders className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        Poids des traits de personnalité
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <div className="bg-gray-50 p-3 rounded-md">
+                          <div className="text-xs text-gray-500">Ouverture</div>
+                          <div className="text-lg font-semibold">{offre.poids_ouverture || 2}</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-md">
+                          <div className="text-xs text-gray-500">Conscience</div>
+                          <div className="text-lg font-semibold">{offre.poids_conscience || 2}</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-md">
+                          <div className="text-xs text-gray-500">Extraversion</div>
+                          <div className="text-lg font-semibold">{offre.poids_extraversion || 2}</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-md">
+                          <div className="text-xs text-gray-500">Agréabilité</div>
+                          <div className="text-lg font-semibold">{offre.poids_agreabilite || 2}</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-md">
+                          <div className="text-xs text-gray-500">Stabilité</div>
+                          <div className="text-lg font-semibold">{offre.poids_stabilite || 2}</div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="col-span-1 sm:col-span-2 md:col-span-3">
                       <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-1">
                         Correspondance avec le CV de candidat

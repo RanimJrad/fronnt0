@@ -1,15 +1,15 @@
-import { Card } from "@/components/ui/card"
+import { Card } from "@/components/ui/card";
 
-import { StatsCards } from "../components/stats-cards"
-import { DashboardCharts } from "../components/dashboard-charts"
-import { TeamLeads } from "../components/team-leads"
-import { TodayActivities } from "../components/today-activities"
-import { RecentActivities } from "../components/recent-activities"
-import { UpcomingLeaves } from "../components/upcoming-leaves"
-import { WelcomeBanner } from "../components/recruteur/welcome-banner_rec"
-import { QuickActions } from "../components/quick-actions"
-import { DashboardSidebarRec } from "../components/recruteur/dashboard-sidebar_rec"
-import { DashboardHeaderRec } from "../components/recruteur/dashboard-header_rec"
+import { StatsCards } from "../components/stats-cards";
+import { DashboardCharts } from "../components/dashboard-charts";
+import { TeamLeads } from "../components/team-leads";
+import { TodayActivities } from "../components/today-activities";
+import { RecentActivities } from "../components/recent-activities";
+import { UpcomingLeaves } from "../components/upcoming-leaves";
+import { WelcomeBanner } from "../components/recruteur/welcome-banner_rec";
+import { QuickActions } from "../components/quick-actions";
+import { DashboardSidebarRec } from "../components/recruteur/dashboard-sidebar_rec";
+import { DashboardHeaderRec } from "../components/recruteur/dashboard-header_rec";
 
 export default function DashboardPage() {
   return (
@@ -32,6 +32,29 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <QuickActions />
 
+            <Card className="p-0 overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow">
+              <div className="w-full">
+                <div className="flex items-center justify-between bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    Statistiques des postes
+                  </h3>
+                </div>
+                <div
+                  className="relative w-full"
+                  style={{ height: "600px", pointerEvents: "none" }}
+                >
+                  <iframe
+                    title="pfe"
+                    className="absolute inset-0 w-full h-full"
+                    src="https://app.powerbi.com/reportEmbed?reportId=07b9701e-cafb-4d30-aff9-836fb80aca73&autoAuth=true&ctid=dbd6664d-4eb9-46eb-99d8-5c43ba153c61&navContentPaneEnabled=false&filterPaneEnabled=false&pageNavigation=false"
+                    frameBorder="0"
+                    allowFullScreen
+                  ></iframe>
+                  {/* Overlay transparent pour empêcher le redimensionnement */}
+                  <div className="absolute inset-0 z-10 bg-transparent"></div>
+                </div>
+              </div>
+            </Card>
             {/* Stats Cards */}
             <div className="grid gap-6">
               <StatsCards />
@@ -67,6 +90,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

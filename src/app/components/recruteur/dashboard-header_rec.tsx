@@ -1,20 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Search, Bell, MessageSquare, User, Settings, LogOut } from "lucide-react"
+import { Search, Bell, MessageSquare, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { MobileSidebarRec } from "./mobile-sidebar-rec"
-
-interface Notification {
-  id: number
-  type: string
-  message: string
-  data: any
-  read: boolean
-  created_at: string
-}
+import { useNotifications } from "@/app/hooks/use-notifications"
 
 interface UserProps {
   nom: string
@@ -26,99 +18,35 @@ interface UserProps {
 
 export function DashboardHeaderRec() {
   const [user, setUser] = useState<UserProps | null>(null)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
 
   useEffect(() => {
     // Fetch user info
     fetch("http://localhost:8000/api/users/profile", {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        Authorization: `Bearer ${sessionStorage.getItem("token")}`,
         Accept: "application/json",
       },
     })
       .then((response) => response.json())
       .then((data) => setUser(data))
       .catch((error) => console.error("Erreur lors de la récupération des infos utilisateur :", error))
-
-    // Fetch notifications
-    fetchNotifications()
-
-    // Set up polling to check for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000)
-    return () => clearInterval(interval)
   }, [])
 
-  const fetchNotifications = () => {
-    fetch("http://localhost:8000/api/notifications", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        Accept: "application/json",
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        // Add null checks to handle unexpected response structure
-        setNotifications(data?.notifications || [])
-        setUnreadCount(data?.unread_count || 0)
-      })
-      .catch((error) => {
-        console.error("Erreur lors de la récupération des notifications :", error)
-        // Set default values on error
-        setNotifications([])
-        setUnreadCount(0)
-      })
-  }
+  const handleNotificationClick = (notification: any) => {
+    markAsRead(notification.id)
 
-  const markAsRead = (notification: Notification) => {
-    fetch(`http://localhost:8000/api/notifications/${notification.id}`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        Accept: "application/json",
-      },
-    })
-      .then(() => {
-        // Update local state
-        setNotifications(notifications.map((n) => (n.id === notification.id ? { ...n, read: true } : n)))
-        setUnreadCount(Math.max(0, unreadCount - 1))
-
-        // Handle navigation based on notification type
-        if (notification.type === "offer_validated") {
-          // Navigate to the validated job offer details
-          window.location.href = "/offre"
-        } else if (notification.type === "new_application") {
-          // Navigate to the application details
-          window.location.href = "/candidat"
-        } else if (notification.type === "account_activated") {
-          // Navigate to the dashboard
-          window.location.href = "/dashbord_rec"
-        }
-      })
-      .catch((error) => console.error("Erreur lors du marquage de la notification comme lue :", error))
-  }
-
-  const markAllAsRead = () => {
-    fetch("http://localhost:8000/api/notifications", {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        Accept: "application/json",
-      },
-    })
-      .then(() => {
-        // Update local state
-        setNotifications(
-          notifications.map((notification) => ({
-            ...notification,
-            read: true,
-          })),
-        )
-        setUnreadCount(0)
-      })
-      .catch((error) => console.error("Erreur lors du marquage de toutes les notifications comme lues :", error))
+    // Handle navigation based on notification type
+    if (notification.type === "offer_validated") {
+      window.location.href = `/offre`
+    } else if (notification.type === "new_application") {
+      window.location.href = `/candidat`
+    } else if (notification.type === "account_activated") {
+      window.location.href = `/dashbord_rec`
+    } else if (notification.type === "offer_rejected") {
+      window.location.href = `/offre`
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -149,7 +77,7 @@ export function DashboardHeaderRec() {
   }
 
   // Function to render notification details based on type
-  const renderNotificationDetails = (notification: Notification) => {
+  const renderNotificationDetails = (notification: any) => {
     switch (notification.type) {
       case "offer_validated":
         return (
@@ -218,14 +146,14 @@ export function DashboardHeaderRec() {
     fetch("http://localhost:8000/api/logout", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        Authorization: `Bearer ${sessionStorage.getItem("token")}`,
         Accept: "application/json",
       },
     })
       .then((response) => response.json())
       .then(() => {
         // Supprimer le token localement
-        localStorage.removeItem("token")
+        sessionStorage.removeItem("token")
 
         // Rediriger vers la page d'accueil
         window.location.href = "/"
@@ -233,7 +161,7 @@ export function DashboardHeaderRec() {
       .catch((error) => {
         console.error("Erreur lors de la déconnexion :", error)
         // En cas d'erreur, on supprime quand même le token et on redirige
-        localStorage.removeItem("token")
+        sessionStorage.removeItem("token")
         window.location.href = "/"
       })
   }
@@ -250,8 +178,6 @@ export function DashboardHeaderRec() {
             <span className="font-bold hidden sm:inline">Recruter Dashboard</span>
           </a>
         </div>
-
-        {/* Search - hidden on mobile, shown on md and up */}
 
         <div className="flex items-center gap-2">
           {/* Mobile search trigger */}
@@ -301,7 +227,7 @@ export function DashboardHeaderRec() {
                     <DropdownMenuItem
                       key={notification.id}
                       className={`p-4 cursor-pointer border-b last:border-b-0 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors ${!notification.read ? "bg-blue-50/70 dark:bg-blue-950/50" : ""}`}
-                      onClick={() => markAsRead(notification)}
+                      onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="flex gap-3 w-full">
                         <div

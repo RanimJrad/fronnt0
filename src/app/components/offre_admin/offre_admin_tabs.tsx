@@ -123,7 +123,7 @@ export function OffreAdminTabs({ refreshTrigger }: { refreshTrigger: boolean }) 
 
     setIsSearching(true)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         console.error("Vous devez être connecté pour rechercher des offres.")
         return
@@ -188,7 +188,7 @@ export function OffreAdminTabs({ refreshTrigger }: { refreshTrigger: boolean }) 
     // Rechercher toutes les offres avec ce nom de poste
     setIsSearching(true)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         console.error("Vous devez être connecté pour rechercher des offres.")
         return
@@ -251,7 +251,7 @@ export function OffreAdminTabs({ refreshTrigger }: { refreshTrigger: boolean }) 
     setIsValidating((prev) => ({ ...prev, [offreId]: true }))
 
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         addNotification("Vous devez être connecté pour valider une offre.", "error")
         return
@@ -291,7 +291,7 @@ export function OffreAdminTabs({ refreshTrigger }: { refreshTrigger: boolean }) 
     }
 
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         addNotification("Vous devez être connecté pour supprimer une offre.", "error")
         return
@@ -367,7 +367,7 @@ export function OffreAdminTabs({ refreshTrigger }: { refreshTrigger: boolean }) 
 
   // Confirm batch validation
   const confirmBatchValidate = async () => {
-    const token = localStorage.getItem("token")
+    const token = sessionStorage.getItem("token")
     if (!token) {
       setIsBatchValidateDialogOpen(false)
       addNotification("Vous devez être connecté pour valider des offres.", "error")
@@ -423,7 +423,7 @@ export function OffreAdminTabs({ refreshTrigger }: { refreshTrigger: boolean }) 
 
   // Confirm batch deletion
   const confirmBatchDelete = async () => {
-    const token = localStorage.getItem("token")
+    const token = sessionStorage.getItem("token")
     if (!token) {
       setIsBatchDeleteDialogOpen(false)
       addNotification("Vous devez être connecté pour supprimer des offres.", "error")

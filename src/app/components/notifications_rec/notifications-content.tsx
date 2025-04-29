@@ -1,46 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Bell, Search, CheckCircle, Filter } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Bell, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { useMediaQuery } from "@/app/hooks/use-media-query_notif"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-
-interface Notification {
-  id: number
-  type: string
-  message: string
-  data: any
-  read: boolean
-  created_at: string
-}
-
-interface User {
-  nom: string
-  prenom: string
-  image: string | null
-  role?: string
-}
+import { useNotifications } from "@/app/hooks/use-notifications"
 
 export default function NotificationsContentRec() {
-  const [user, setUser] = useState<User | null>(null)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
+
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("all")
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   const isMobile = useMediaQuery("(max-width: 640px)")
-
-  useEffect(() => {
-    fetchAllNotifications()
-  }, [])
 
   useEffect(() => {
     if (isMobile) {
@@ -66,94 +43,12 @@ export default function NotificationsContentRec() {
     }
   }, [isMobile])
 
-  const fetchAllNotifications = () => {
-    fetch("http://127.0.0.1:8000/api/notifications", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        Accept: "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`)
-        }
-        return response.text().then((text) => {
-          try {
-            return text ? JSON.parse(text) : {}
-          } catch (e) {
-            console.error("Error parsing JSON:", e, "Response was:", text)
-            return {}
-          }
-        })
-      })
-      .then((data) => {
-        setNotifications(data?.notifications || [])
-        setUnreadCount(data?.unread_count || 0)
-
-        // Extract all unique notification types for filter
-        const types = [...new Set(data?.notifications?.map((n: Notification) => n.type) || [])]
-        setSelectedTypes(types)
-      })
-      .catch((error) => {
-        console.error("Erreur lors de la récupération des notifications :", error)
-        setNotifications([])
-        setUnreadCount(0)
-      })
+  const handleNotificationClick = (notification: any) => {
+    markAsRead(notification.id)
+    handleNotificationNavigation(notification)
   }
 
-  const handleNotificationClick = (notification: Notification) => {
-    // Always navigate regardless of read status
-    if (user?.role === "admin") {
-      handleAdminNotificationNavigation(notification)
-    } else {
-      handleRecruiterNotificationNavigation(notification)
-    }
-
-    // Only make API call if notification is unread
-    if (notification.read) return
-
-    fetch(`http://127.0.0.1:8000/api/notifications/${notification.id}`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        Accept: "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`)
-        }
-        return response.text().then((text) => {
-          try {
-            return text ? JSON.parse(text) : {}
-          } catch (e) {
-            console.error("Error parsing JSON:", e, "Response was:", text)
-            return {}
-          }
-        })
-      })
-      .then(() => {
-        // Update local state
-        setNotifications(notifications.map((n) => (n.id === notification.id ? { ...n, read: true } : n)))
-        setUnreadCount(Math.max(0, unreadCount - 1))
-      })
-      .catch((error) => console.error("Erreur lors du marquage de la notification comme lue :", error))
-  }
-
-  const handleAdminNotificationNavigation = (notification: Notification) => {
-    if (notification.type === "new_job_offer") {
-      window.location.href = `/offre_admin`
-    } else if (notification.type === "new_recruiter") {
-      window.location.href = `/employees`
-    } else if (notification.type === "new_contact") {
-      window.location.href = `/contact_admin`
-    } else if (notification.type === "new_testimonial") {
-      window.location.href = `/temoiniage_admin`
-    }
-  }
-
-  const handleRecruiterNotificationNavigation = (notification: Notification) => {
+  const handleNotificationNavigation = (notification: any) => {
     if (notification.type === "offer_validated") {
       window.location.href = `/offre`
     } else if (notification.type === "new_application") {
@@ -163,40 +58,6 @@ export default function NotificationsContentRec() {
     } else if (notification.type === "offer_rejected") {
       window.location.href = `/offre`
     }
-  }
-
-  const markAllAsRead = () => {
-    fetch("http://127.0.0.1:8000/notifications", {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        Accept: "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`)
-        }
-        return response.text().then((text) => {
-          try {
-            return text ? JSON.parse(text) : {}
-          } catch (e) {
-            console.error("Error parsing JSON:", e, "Response was:", text)
-            return {}
-          }
-        })
-      })
-      .then(() => {
-        // Update local state
-        setNotifications(
-          notifications.map((notification) => ({
-            ...notification,
-            read: true,
-          })),
-        )
-        setUnreadCount(0)
-      })
-      .catch((error) => console.error("Erreur lors du marquage de toutes les notifications comme lues :", error))
   }
 
   const formatDate = (dateString: string) => {
@@ -212,12 +73,6 @@ export default function NotificationsContentRec() {
 
   // Function to get notification title based on type
   const getNotificationTitle = (type: string) => {
-    // Admin notification types
-    if (type === "new_recruiter") return "Nouveau recruteur"
-    if (type === "new_job_offer") return "Nouvelle offre d'emploi"
-    if (type === "new_contact") return "Nouveau message de contact"
-    if (type === "new_testimonial") return "Nouveau témoignage"
-
     // Recruiter notification types
     if (type === "offer_validated") return "Offre validée"
     if (type === "new_application") return "Nouvelle candidature"
@@ -228,11 +83,11 @@ export default function NotificationsContentRec() {
   }
 
   // Function to render notification details based on type
-  const renderNotificationDetails = (notification: Notification) => {
+  const renderNotificationDetails = (notification: any) => {
     // Recruiter notification types
     if (notification.type === "offer_validated") {
       return (
-        <div className="text-sm text-muted-foreground mt-2 p-3 bg-green-50 dark:bg-green-950/30 rounded-md border-l-2 border-green-500">
+        <div className="text-sm text-muted-foreground mt-2 p-2 sm:p-3 bg-green-50 dark:bg-green-950/30 rounded-md border-l-2 border-green-500">
           <div>
             Poste: <span className="font-medium">{notification.data.position}</span>
           </div>
@@ -248,7 +103,7 @@ export default function NotificationsContentRec() {
 
     if (notification.type === "new_application") {
       return (
-        <div className="text-sm text-muted-foreground mt-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-md border-l-2 border-blue-500">
+        <div className="text-sm text-muted-foreground mt-2 p-2 sm:p-3 bg-blue-50 dark:bg-blue-950/30 rounded-md border-l-2 border-blue-500">
           <div>
             Candidat: <span className="font-medium">{notification.data.candidate_name}</span>
           </div>
@@ -264,7 +119,7 @@ export default function NotificationsContentRec() {
 
     if (notification.type === "account_activated") {
       return (
-        <div className="text-sm text-muted-foreground mt-2 p-3 bg-green-50 dark:bg-green-950/30 rounded-md border-l-2 border-green-500">
+        <div className="text-sm text-muted-foreground mt-2 p-2 sm:p-3 bg-green-50 dark:bg-green-950/30 rounded-md border-l-2 border-green-500">
           <div className="mt-1 text-green-600 dark:text-green-400 font-medium">
             Votre compte a été activé par l'administrateur
           </div>
@@ -275,7 +130,7 @@ export default function NotificationsContentRec() {
 
     if (notification.type === "offer_rejected") {
       return (
-        <div className="text-sm text-muted-foreground mt-2 p-3 bg-red-50 dark:bg-red-950/30 rounded-md border-l-2 border-red-500">
+        <div className="text-sm text-muted-foreground mt-2 p-2 sm:p-3 bg-red-50 dark:bg-red-950/30 rounded-md border-l-2 border-red-500">
           <div>
             Poste: <span className="font-medium">{notification.data.position}</span>
           </div>
@@ -306,7 +161,7 @@ export default function NotificationsContentRec() {
       JSON.stringify(notification.data).toLowerCase().includes(searchQuery.toLowerCase())
 
     // Filter by type
-    const matchesType = selectedTypes.includes(notification.type)
+    const matchesType = selectedTypes.length === 0 || selectedTypes.includes(notification.type)
 
     // Filter by tab
     const matchesTab =
@@ -318,7 +173,7 @@ export default function NotificationsContentRec() {
   })
 
   // Group notifications by date
-  const groupedNotifications: { [key: string]: Notification[] } = {}
+  const groupedNotifications: { [key: string]: any[] } = {}
   filteredNotifications.forEach((notification) => {
     const date = new Date(notification.created_at)
     const dateKey = date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
@@ -347,12 +202,9 @@ export default function NotificationsContentRec() {
   // Get unique notification types for filter
   const uniqueTypes = [...new Set(notifications.map((n) => n.type))]
 
-  // Theme color based on user role
-  const themeColor = "blue"
-
   return (
-    <div className="container max-w-5xl py-4 sm:py-8 px-2 sm:px-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
+    <div className="container max-w-5xl py-4 sm:py-8 px-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <Badge className={"bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"}>
@@ -364,164 +216,62 @@ export default function NotificationsContentRec() {
           <Button
             variant="outline"
             size="sm"
-            onClick={markAllAsRead}
+            onClick={() => markAllAsRead()}
             className={
               "text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950 w-full sm:w-auto"
             }
           >
-            <CheckCircle className="h-4 w-4 mr-2" />
+            <Bell className="h-4 w-4 mr-2" />
             Tout marquer comme lu
           </Button>
         )}
       </div>
 
-      {isMobile ? (
-        <div className="mb-4 space-y-3">
-          
-
-          <div className="flex items-center justify-between gap-2">
-            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filtrer
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="h-[70vh] rounded-t-xl">
-                <div className="py-4">
-                  <h3 className="text-lg font-medium mb-4">Filtrer par type</h3>
-                  <div className="space-y-3">
-                    {uniqueTypes.map((type) => (
-                      <div key={type} className="flex items-center" onClick={() => handleTypeToggle(type)}>
-                        <div
-                          className={`h-5 w-5 rounded border ${selectedTypes.includes(type) ? "bg-blue-600 border-blue-600" : "border-gray-300"} flex items-center justify-center mr-3`}
-                        >
-                          {selectedTypes.includes(type) && (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="text-white"
-                            >
-                              <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                          )}
-                        </div>
-                        <span>{getNotificationTitle(type)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Button className="w-full mt-6" onClick={() => setIsFilterOpen(false)}>
-                    Appliquer
-                  </Button>
+      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto mb-2 sm:mb-0">
+              <Filter className="h-4 w-4 mr-2" />
+              Filtrer par type
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {uniqueTypes.map((type) => (
+              <DropdownMenuItem key={type} onClick={() => handleTypeToggle(type)}>
+                <div className="flex items-center w-full">
+                  <input type="checkbox" checked={selectedTypes.includes(type)} onChange={() => {}} className="mr-2" />
+                  {getNotificationTitle(type)}
                 </div>
-              </SheetContent>
-            </Sheet>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-            <Tabs defaultValue="all" className="flex-1" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3 gap-1">
-                <TabsTrigger className="px-2 text-xs" value="all">
-                  Toutes
-                </TabsTrigger>
-                <TabsTrigger className="px-2 text-xs" value="unread">
-                  Non lues
-                </TabsTrigger>
-                <TabsTrigger className="px-2 text-xs" value="read">
-                  Lues
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+          <Tabs defaultValue="all" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3 gap-1">
+              <TabsTrigger className="px-4" value="all">
+                Toutes
+              </TabsTrigger>
+              <TabsTrigger className="px-4" value="unread">
+                Non lues
+              </TabsTrigger>
+              <TabsTrigger className="px-4" value="read">
+                Lues
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-      ) : (
-        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          {/* <div className="relative w-full sm:w-64 flex-1 sm:max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Rechercher..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div> */}
+      </div>
 
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1">
-                  <Filter className="h-4 w-4" />
-                  Filtrer par type
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="p-2">
-                  <h4 className="mb-2 font-medium">Types de notifications</h4>
-                  {uniqueTypes.map((type) => (
-                    <DropdownMenuItem
-                      key={type}
-                      onSelect={(e) => {
-                        e.preventDefault()
-                        handleTypeToggle(type)
-                      }}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <div
-                        className={`h-4 w-4 rounded border ${selectedTypes.includes(type) ? "bg-blue-600 border-blue-600" : "border-gray-300"} flex items-center justify-center`}
-                      >
-                        {selectedTypes.includes(type) && (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-white"
-                          >
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-sm">{getNotificationTitle(type)}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Tabs defaultValue="all" className="w-auto" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="all">Toutes</TabsTrigger>
-                <TabsTrigger value="unread">Non lues</TabsTrigger>
-                <TabsTrigger value="read">Lues</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        </div>
-      )}
-
-      <Card className="shadow-sm">
-        <CardHeader
-          className={"bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 py-3 sm:py-6"}
-        >
-          <CardTitle className={"text-blue-700 dark:text-blue-300 text-lg sm:text-xl"}>
-            Historique des notifications
-          </CardTitle>
+      <Card>
+        <CardHeader className={"bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900"}>
+          <CardTitle className={"text-blue-700 dark:text-blue-300"}>Historique des notifications</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {filteredNotifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 sm:py-16">
-              <Bell className="h-12 w-12 sm:h-16 sm:w-16 text-muted-foreground opacity-20 mb-4" />
+            <div className="flex flex-col items-center justify-center py-16">
+              <Bell className="h-16 w-16 text-muted-foreground opacity-20 mb-4" />
               <p className="text-muted-foreground text-center">Aucune notification à afficher</p>
               <p className="text-muted-foreground text-center text-sm mt-1">
                 {selectedTypes.length === 0 || searchQuery
@@ -540,16 +290,16 @@ export default function NotificationsContentRec() {
                     {groupedNotifications[dateKey].map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-3 sm:p-4 ${"hover:bg-blue-50/50 dark:hover:bg-blue-950/30"} cursor-pointer transition-colors ${!notification.read ? "bg-blue-50/70 dark:bg-blue-950/50" : ""} active:bg-blue-100 dark:active:bg-blue-900/50`}
+                        className={`p-4 ${"hover:bg-blue-50/50 dark:hover:bg-blue-950/30"} cursor-pointer transition-colors ${!notification.read ? "bg-blue-50/70 dark:bg-blue-950/50" : ""}`}
                         onClick={() => handleNotificationClick(notification)}
                       >
-                        <div className="flex gap-2 sm:gap-3">
+                        <div className="flex gap-3">
                           <div
                             className={`flex-shrink-0 w-2 h-2 mt-2 rounded-full ${!notification.read ? "bg-blue-500" : "bg-transparent"}`}
                           />
                           <div className="w-full">
-                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-4">
-                              <h3 className={"font-medium text-blue-700 dark:text-blue-300 text-sm sm:text-base"}>
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                              <h3 className={"font-medium text-blue-700 dark:text-blue-300"}>
                                 {getNotificationTitle(notification.type)}
                               </h3>
                               <div className="flex items-center gap-2">
@@ -566,7 +316,7 @@ export default function NotificationsContentRec() {
                                 )}
                               </div>
                             </div>
-                            <p className="mt-1 text-sm">{notification.message}</p>
+                            <p className="mt-1">{notification.message}</p>
                             {renderNotificationDetails(notification)}
                           </div>
                         </div>
@@ -582,4 +332,3 @@ export default function NotificationsContentRec() {
     </div>
   )
 }
-

@@ -28,6 +28,7 @@ export default function DashboardPage() {
           <div className="md:col-span-5 lg:col-span-5 space-y-6">
             {/* Welcome Banner */}
             <WelcomeBanner />
+            
 
             {/* Quick Actions */}
             <QuickActions />

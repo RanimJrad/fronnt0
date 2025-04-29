@@ -49,7 +49,7 @@ const TemoignagesTable: React.FC<TemoignagesTableProps> = ({ refresh }) => {
 
   const fetchTemoignages = async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour voir les témoignages.")
         return
@@ -65,7 +65,7 @@ const TemoignagesTable: React.FC<TemoignagesTableProps> = ({ refresh }) => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token")
+          sessionStorage.removeItem("token")
           router.push("/auth/login")
           return
         }
@@ -86,7 +86,7 @@ const TemoignagesTable: React.FC<TemoignagesTableProps> = ({ refresh }) => {
   const handleValidate = async (temoignageId: number) => {
     setValidating(temoignageId)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour valider un témoignage.")
         return
@@ -129,7 +129,7 @@ const TemoignagesTable: React.FC<TemoignagesTableProps> = ({ refresh }) => {
 
     setDeleting(selectedTemoignage.id)
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour supprimer un témoignage.")
         setConfirmDelete(false)
@@ -182,7 +182,7 @@ const TemoignagesTable: React.FC<TemoignagesTableProps> = ({ refresh }) => {
     if (selectedIds.length === 0) return
 
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour valider les témoignages.")
         return
@@ -237,7 +237,7 @@ const TemoignagesTable: React.FC<TemoignagesTableProps> = ({ refresh }) => {
     if (selectedIds.length === 0) return
 
     try {
-      const token = localStorage.getItem("token")
+      const token = sessionStorage.getItem("token")
       if (!token) {
         setError("Vous devez être connecté pour supprimer les témoignages.")
         setConfirmBatchDelete(false)
