@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Calendar, Building2, Briefcase, MapPin, Clock, AlertCircle, CheckCircle2, Sliders } from 'lucide-react'
+import { Calendar, Building2, Briefcase, MapPin, Clock, AlertCircle, CheckCircle2, Sliders } from "lucide-react"
 
 // Sample data for dropdowns - same as in AddOffreForm
 const DEPARTMENTS = [
@@ -142,6 +142,17 @@ const TRAIT_WEIGHTS = [
   { id: "9", name: "10", value: 10 },
 ]
 
+const MATCHING_PERCENTAGES = [
+  { id: "1", name: "0%", value: 0 },
+  { id: "2", name: "10%", value: 10 },
+  { id: "3", name: "20%", value: 20 },
+  { id: "4", name: "30%", value: 30 },
+  { id: "5", name: "40%", value: 40 },
+  { id: "6", name: "50%", value: 50 },
+  { id: "7", name: "60%", value: 60 },
+  { id: "8", name: "70%", value: 70 },
+]
+
 // Valeur spéciale pour l'option "Autre"
 const AUTRE_OPTION = "autre"
 
@@ -164,6 +175,8 @@ interface Offre {
   societe?: string
   responsabilite?: string
   experience?: string
+  matching?: number
+  matchingAttachment?: string | number
   poids_ouverture?: string | number
   poids_conscience?: string | number
   poids_extraversion?: string | number
@@ -204,6 +217,7 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
     societe: "",
     responsabilite: "",
     experience: "",
+    matchingAttachment: "",
     poids_ouverture: "2",
     poids_conscience: "2",
     poids_extraversion: "2",
@@ -227,7 +241,8 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
         return value || ""
       }
 
-      setFormData({
+      setFormData((prev) => ({
+        ...prev,
         domaine: cleanValue(offre.domaine),
         poste: cleanValue(offre.poste),
         description: cleanValue(offre.description),
@@ -243,12 +258,14 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
         societe: cleanValue(offre.societe),
         responsabilite: cleanValue(offre.responsabilite),
         experience: cleanValue(offre.experience),
+        // Récupérer la valeur de matching ou matchingAttachment et la convertir en chaîne
+        matchingAttachment: offre.matching ? offre.matching.toString() : cleanValue(offre.matchingAttachment) || "",
         poids_ouverture: cleanValue(offre.poids_ouverture) || "2",
         poids_conscience: cleanValue(offre.poids_conscience) || "2",
         poids_extraversion: cleanValue(offre.poids_extraversion) || "2",
         poids_agreabilite: cleanValue(offre.poids_agreabilite) || "2",
         poids_stabilite: cleanValue(offre.poids_stabilite) || "2",
-      })
+      }))
 
       // Vérifier si le domaine et le poste sont dans les listes prédéfinies
       if (offre.departement) {
@@ -372,6 +389,10 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
         poste: formData.poste === AUTRE_OPTION ? customPoste : formData.poste,
         // Assurez-vous que les champs sont au format attendu par le serveur
         dateExpiration: formData.dateExpiration, // Format YYYY-MM-DD
+        // Convertir matchingAttachment en valeur numérique pour le champ matching
+        matching: formData.matchingAttachment
+          ? Number.parseInt(formData.matchingAttachment.toString().replace("%", ""))
+          : 0,
       }
 
       // Si l'offre est validée, utiliser l'endpoint de prolongation pour mettre à jour uniquement la date d'expiration
@@ -837,6 +858,27 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
                           {EDUCATION_LEVELS.map((level) => (
                             <option key={level.id} value={level.name}>
                               {level.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Correspondance avec l'offre */}
+                      <div className={styles.formGroup}>
+                        <label htmlFor="matchingAttachment" className={styles.label}>
+                          Correspondance avec le CV
+                        </label>
+                        <select
+                          id="matchingAttachment"
+                          value={formData.matchingAttachment}
+                          onChange={(e) => handleSelectChange("matchingAttachment", e.target.value)}
+                          className={styles.select}
+                          disabled={offre.valider}
+                        >
+                          <option value="">Sélectionner un pourcentage</option>
+                          {MATCHING_PERCENTAGES.map((percentage) => (
+                            <option key={percentage.id} value={percentage.value}>
+                              {percentage.name}
                             </option>
                           ))}
                         </select>

@@ -4,19 +4,30 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Shield } from 'lucide-react'
+import { Button } from "@/components/ui/button"
 
 interface TestSecurityProps {
   onViolation?: (type: string, count: number) => void
   maxViolations?: number
   children: React.ReactNode
+  candidatId: number
+  offreId: number
 }
 
-export default function TestSecurity({ onViolation, maxViolations = 3, children }: TestSecurityProps) {
+export default function TestSecurity({
+  onViolation,
+  maxViolations = 2,
+  children,
+  candidatId,
+  offreId,
+}: TestSecurityProps) {
   const [violations, setViolations] = useState<{ type: string; timestamp: number }[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showWarning, setShowWarning] = useState(false)
   const [warningMessage, setWarningMessage] = useState("")
+  const [cheatingDetected, setCheatingDetected] = useState(false)
+  const [fullscreenAttempted, setFullscreenAttempted] = useState(false)
 
   // Group violations by type and count them
   const violationCounts = violations.reduce(
@@ -27,8 +38,44 @@ export default function TestSecurity({ onViolation, maxViolations = 3, children 
     {} as Record<string, number>,
   )
 
-  // Check if any violation type exceeds the maximum allowed
   const hasExceededMaxViolations = Object.values(violationCounts).some((count) => count >= maxViolations)
+
+  // Fonction pour enregistrer un score de zéro en cas de triche
+  const handleCheatingDetected = async () => {
+    // Éviter d'appeler l'API plusieurs fois
+    if (cheatingDetected) return
+
+    setCheatingDetected(true)
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/score-zero", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          candidat_id: candidatId,
+          offre_id: offreId,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("Réponse du serveur:", data)
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement du score de triche :", error)
+    }
+  }
+
+  useEffect(() => {
+    // Vérifier si le candidat a triché et enregistrer un score de zéro
+    if (hasExceededMaxViolations && !cheatingDetected) {
+      handleCheatingDetected()
+    }
+  }, [hasExceededMaxViolations, cheatingDetected])
 
   useEffect(() => {
     // Prevent copy, paste, cut
@@ -75,18 +122,6 @@ export default function TestSecurity({ onViolation, maxViolations = 3, children 
       showTemporaryWarning("Vous avez quitté la fenêtre du test. Cela sera signalé.")
     }
 
-    // Request fullscreen on start
-    const requestFullscreenMode = () => {
-      try {
-        if (document.documentElement.requestFullscreen) {
-          document.documentElement.requestFullscreen()
-          setIsFullscreen(true)
-        }
-      } catch (error) {
-        console.error("Fullscreen request failed:", error)
-      }
-    }
-
     // Handle fullscreen change
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
@@ -108,13 +143,6 @@ export default function TestSecurity({ onViolation, maxViolations = 3, children 
     document.addEventListener("fullscreenchange", handleFullscreenChange)
     window.addEventListener("blur", handleWindowBlur)
 
-    // Initial fullscreen request with user interaction
-    const handleInitialClick = () => {
-      requestFullscreenMode()
-      document.removeEventListener("click", handleInitialClick)
-    }
-    document.addEventListener("click", handleInitialClick)
-
     // Cleanup
     return () => {
       document.removeEventListener("copy", preventCopyPaste)
@@ -125,7 +153,6 @@ export default function TestSecurity({ onViolation, maxViolations = 3, children 
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       document.removeEventListener("fullscreenchange", handleFullscreenChange)
       window.removeEventListener("blur", handleWindowBlur)
-      document.removeEventListener("click", handleInitialClick)
 
       // Exit fullscreen on component unmount
       if (document.fullscreenElement) {
@@ -133,6 +160,34 @@ export default function TestSecurity({ onViolation, maxViolations = 3, children 
       }
     }
   }, [])
+
+  // Request fullscreen mode with user interaction
+  const requestFullscreenMode = () => {
+    try {
+      setFullscreenAttempted(true)
+      
+      // Utiliser une promesse pour gérer les erreurs de manière asynchrone
+      const requestPromise = document.documentElement.requestFullscreen();
+      
+      // Gérer les erreurs potentielles
+      requestPromise
+        .then(() => {
+          setIsFullscreen(true);
+          console.log("Mode plein écran activé avec succès");
+        })
+        .catch((err) => {
+          console.error("Erreur lors de la demande de plein écran:", err);
+          // Afficher un message d'erreur à l'utilisateur
+          showTemporaryWarning("Impossible d'activer le mode plein écran. Veuillez autoriser cette fonctionnalité dans votre navigateur.");
+          
+          // Enregistrer comme violation
+          recordViolation("fullscreen_denied");
+        });
+    } catch (error) {
+      console.error("Exception lors de la demande de plein écran:", error);
+      showTemporaryWarning("Votre navigateur ne prend pas en charge le mode plein écran requis pour ce test.");
+    }
+  }
 
   // Record a security violation
   const recordViolation = (type: string) => {
@@ -157,6 +212,54 @@ export default function TestSecurity({ onViolation, maxViolations = 3, children 
     }, 5000)
   }
 
+  // Fonction pour afficher le message de triche détectée
+  const renderCheatingDetectedMessage = () => {
+    return (
+      <div className="w-full max-w-3xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-red-200">
+          <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 flex flex-col items-center justify-center text-white">
+            <div className="h-20 w-20 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></div>
+                <Shield className="h-10 w-10 text-white relative z-10" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-center">Test bloqué : Triche détectée</h2>
+            <p className="text-white/80 text-center mt-2">Vous n'êtes pas autorisé à repasser ce test</p>
+          </div>
+
+          <div className="p-6">
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Nous avons détecté des comportements suspects lors de votre tentative. Pour des raisons de
+                sécurité et d'équité, vous ne pouvez plus continuer ce test.
+              </AlertDescription>
+            </Alert>
+
+            <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-6">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Pourquoi ce message ?</h3>
+              <p className="text-red-700 text-sm">
+                Notre système a détecté des tentatives de contournement des règles du test, comme des changements
+                d'onglet, des sorties de la fenêtre, des tentatives de copier-coller, ou d'autres actions non autorisées
+                pendant l'évaluation.
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              <Button
+                onClick={() => window.history.back()}
+                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+              >
+                Retour aux offres d'emploi
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="test-security-container">
       {showWarning && (
@@ -169,50 +272,39 @@ export default function TestSecurity({ onViolation, maxViolations = 3, children 
         </Alert>
       )}
 
-      {/* Si trop de violations, on n'affiche plus la demande de plein écran */}
-      {!isFullscreen && !hasExceededMaxViolations && (
-        <div className="fullscreen-prompt fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50 p-4 text-center">
-          <div className="bg-white p-6 rounded-lg max-w-md">
-            <h3 className="text-xl font-bold mb-4">Mode plein écran requis</h3>
-            <p className="mb-4">
-              Pour assurer l'intégrité du test, veuillez passer en mode plein écran en cliquant sur le bouton
-              ci-dessous.
-            </p>
-            <button
-              onClick={() => document.documentElement.requestFullscreen()}
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-            >
-              Passer en plein écran
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* Si trop de violations, on affiche le message de triche */}
       {hasExceededMaxViolations ? (
-        <div className="violation-exceeded bg-red-50 border border-red-200 p-6 rounded-lg">
-          <h3 className="text-lg font-bold text-red-700 mb-2">Trop de violations de sécurité détectées</h3>
-          <p className="text-red-600 mb-4">
-            Nous avons détecté plusieurs tentatives de contourner les règles du test. Votre session a été signalée et
-            pourrait être invalidée.
-          </p>
-          <div className="text-sm text-red-500">
-            <p>Violations détectées:</p>
-            <ul className="list-disc pl-5 mt-2">
-              {Object.entries(violationCounts).map(([type, count]) => (
-                <li key={type}>
-                  {type === "clipboard" && `Tentatives de copier-coller: ${count}`}
-                  {type === "tabswitch" && `Changements d'onglet: ${count}`}
-                  {type === "windowblur" && `Sorties de la fenêtre: ${count}`}
-                  {type === "keyboard" && `Raccourcis clavier interdits: ${count}`}
-                  {type === "contextmenu" && `Ouvertures du menu contextuel: ${count}`}
-                  {type === "fullscreen" && `Sorties du mode plein écran: ${count}`}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        renderCheatingDetectedMessage()
       ) : (
-        children
+        <>
+          {/* Si pas en plein écran et pas trop de violations, on affiche la demande de plein écran */}
+          {!isFullscreen && (
+            <div className="fullscreen-prompt fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50 p-4 text-center">
+              <div className="bg-white p-6 rounded-lg max-w-md">
+                <h3 className="text-xl font-bold mb-4">Mode plein écran requis</h3>
+                <p className="mb-4">
+                  Pour assurer l'intégrité du test, veuillez passer en mode plein écran en cliquant sur le bouton
+                  ci-dessous.
+                </p>
+                <button
+                  onClick={requestFullscreenMode}
+                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                >
+                  Passer en plein écran
+                </button>
+                
+                {fullscreenAttempted && (
+                  <div >
+                    
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Contenu normal du test */}
+          {children}
+        </>
       )}
     </div>
   )

@@ -43,13 +43,7 @@ export default function DashboardPage() {
                   className="relative w-full"
                   style={{ height: "600px", pointerEvents: "none" }}
                 >
-                  <iframe
-                    title="pfe"
-                    className="absolute inset-0 w-full h-full"
-                    src="https://app.powerbi.com/reportEmbed?reportId=07b9701e-cafb-4d30-aff9-836fb80aca73&autoAuth=true&ctid=dbd6664d-4eb9-46eb-99d8-5c43ba153c61&navContentPaneEnabled=false&filterPaneEnabled=false&pageNavigation=false"
-                    frameBorder="0"
-                    allowFullScreen
-                  ></iframe>
+                  <iframe title="pfe" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=07b9701e-cafb-4d30-aff9-836fb80aca73&autoAuth=true&ctid=dbd6664d-4eb9-46eb-99d8-5c43ba153c61" frameBorder="0" allowFullScreen={true}></iframe>
                   {/* Overlay transparent pour empêcher le redimensionnement */}
                   <div className="absolute inset-0 z-10 bg-transparent"></div>
                 </div>
