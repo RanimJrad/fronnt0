@@ -493,7 +493,7 @@ export default function TestPersonnalitePage({
                     <div className="success-icon-container">
                       <CheckCircle2 className="success-icon" />
                     </div>
-                    <h2 className="success-title">Test complété avec succès !</h2>
+                    <h2 className="success-title">Test complété !</h2>
                     <p className="success-message">
                       Merci d'avoir complété le test de personnalité. Votre candidature a été enregistrée et sera
                       examinée par notre équipe. N'hésitez pas à consulter votre email, nous vous enverrons bientôt une

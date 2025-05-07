@@ -52,7 +52,9 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
   const [cheatingDetected, setCheatingDetected] = useState(false)
 
   // Timer state
-  const [timeRemaining, setTimeRemaining] = useState(10 * 60) // 10 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
+  const [startTime, setStartTime] = useState<number | null>(null)
+  const [totalTime] = useState(10 * 60) // 10 minutes in seconds
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Use refs to track initialization state and prevent multiple API calls
@@ -62,10 +64,68 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
 
   // Initialize timer when component mounts
   useEffect(() => {
-    // Start the timer
+    // Vérifier si un test est en cours dans le localStorage
+    if (testId) {
+      const savedTest = localStorage.getItem(`personality_test_${testId}`)
+      if (savedTest) {
+        try {
+          const parsedTest = JSON.parse(savedTest)
+
+          // Restaurer l'heure de départ et calculer le temps restant
+          if (parsedTest.startTime) {
+            const startTimeFromStorage = parsedTest.startTime
+            setStartTime(startTimeFromStorage)
+
+            // Calculer le temps écoulé depuis le début du test
+            const now = Date.now()
+            const elapsedSeconds = Math.floor((now - startTimeFromStorage) / 1000)
+
+            // Calculer le temps restant
+            const remaining = totalTime - elapsedSeconds
+
+            // Si le temps est déjà écoulé, passer directement à l'état timeout
+            if (remaining <= 0) {
+              setTimeRemaining(0)
+              setTestStage("timeout")
+              return
+            }
+
+            setTimeRemaining(remaining)
+          } else {
+            // Aucune heure de départ trouvée, initialiser avec le temps total
+            const newStartTime = Date.now()
+            setStartTime(newStartTime)
+            setTimeRemaining(totalTime)
+
+            // Mettre à jour le localStorage avec l'heure de départ
+            localStorage.setItem(
+              `personality_test_${testId}`,
+              JSON.stringify({
+                ...parsedTest,
+                startTime: newStartTime,
+              }),
+            )
+          }
+        } catch (error) {
+          console.error("Erreur lors de la restauration du timer:", error)
+          setTimeRemaining(totalTime)
+          setStartTime(Date.now())
+        }
+      } else {
+        // Aucun test trouvé, initialiser avec le temps total
+        setTimeRemaining(totalTime)
+        setStartTime(Date.now())
+      }
+    } else {
+      // Aucun testId, initialiser avec le temps total
+      setTimeRemaining(totalTime)
+      setStartTime(Date.now())
+    }
+
+    // Démarrer le timer
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
-        if (prev <= 1) {
+        if (!prev || prev <= 1) {
           // Time's up - clear interval and set timeout state
           if (timerRef.current) {
             clearInterval(timerRef.current)
@@ -84,7 +144,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
         clearInterval(timerRef.current)
       }
     }
-  }, [])
+  }, [testId, totalTime])
 
   // Clear timer when test is completed
   useEffect(() => {
@@ -138,7 +198,10 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
   }, [currentQuestionIndex, answers, questions])
 
   // Format time remaining as MM:SS
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds: number | null) => {
+    if (timeRemaining === null) {
+      return "00:00"
+    }
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
     return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
@@ -185,11 +248,27 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
 
         // Si des réponses existent, les restaurer
         if (parsedTest.answers && Array.isArray(parsedTest.answers)) {
-          setAnswers(parsedTest.answers)
+          // S'assurer que les réponses sont des objets valides avec text et score
+          const validatedAnswers = parsedTest.answers.map((answer) => {
+            if (answer && typeof answer === "object" && "text" in answer && "score" in answer) {
+              return answer
+            }
+            return null
+          })
 
-          // Définir l'option sélectionnée pour la question actuelle (qui est 0 au démarrage)
-          if (parsedTest.answers[0]) {
-            setSelectedOption(parsedTest.answers[0])
+          setAnswers(validatedAnswers)
+
+          // Restaurer l'index de la question actuelle s'il existe
+          if (parsedTest.currentQuestionIndex !== undefined) {
+            const questionIndex = Number(parsedTest.currentQuestionIndex)
+            setCurrentQuestionIndex(questionIndex)
+
+            // Définir l'option sélectionnée pour la question actuelle restaurée
+            if (validatedAnswers[questionIndex]) {
+              // On ne définit pas directement l'option ici, car les questions ne sont peut-être pas encore chargées
+              // L'effet ci-dessus s'en chargera une fois que les questions seront disponibles
+              console.log("Réponse trouvée pour la question actuelle:", validatedAnswers[questionIndex])
+            }
           }
         }
 
@@ -198,6 +277,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
         return
       }
 
+      // Le reste du code reste inchangé...
       // Aucun test existant, générer un nouveau
       const response = await fetch(`http://127.0.0.1:8000/api/generate-test`, {
         method: "POST",
@@ -260,8 +340,9 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
           JSON.stringify({
             questions: data.questions,
             answers: new Array(data.questions.length).fill(null),
-            startTime: new Date().toISOString(),
+            startTime: Date.now(),
             status: "in_progress",
+            currentQuestionIndex: 0, // Initialiser l'index de la question actuelle
           }),
         )
       } else {
@@ -287,11 +368,14 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
         answers,
         lastUpdated: new Date().toISOString(),
         status: "in_progress",
+        startTime: startTime,
+        timeRemaining: timeRemaining,
+        currentQuestionIndex: currentQuestionIndex, // Ajouter l'index de la question actuelle
       }),
     )
 
     console.log("État du test sauvegardé dans le localStorage")
-  }, [testId, questions, answers])
+  }, [testId, questions, answers, startTime, timeRemaining, currentQuestionIndex])
 
   // Modifier la fonction handleOptionSelect pour sauvegarder après chaque sélection
   const handleOptionSelect = (option: Option) => {
@@ -313,6 +397,9 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
           answers: newAnswers,
           lastUpdated: new Date().toISOString(),
           status: "in_progress",
+          startTime: startTime,
+          timeRemaining: timeRemaining,
+          currentQuestionIndex: currentQuestionIndex, // Ajouter l'index de la question actuelle
         }),
       )
     }, 0)
@@ -330,7 +417,11 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
     newAnswers[currentQuestionIndex] = selectedOption
     setAnswers(newAnswers)
 
-    // Sauvegarder l'état
+    // Déterminer le nouvel index de question
+    const newQuestionIndex =
+      currentQuestionIndex < questions.length - 1 ? currentQuestionIndex + 1 : currentQuestionIndex
+
+    // Sauvegarder l'état avec le nouvel index
     localStorage.setItem(
       `personality_test_${testId}`,
       JSON.stringify({
@@ -338,6 +429,9 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
         answers: newAnswers,
         lastUpdated: new Date().toISOString(),
         status: "in_progress",
+        startTime: startTime,
+        timeRemaining: timeRemaining,
+        currentQuestionIndex: newQuestionIndex, // Utiliser le nouvel index
       }),
     )
 
@@ -373,6 +467,8 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
             answers,
             lastUpdated: new Date().toISOString(),
             status: "completed",
+            startTime: startTime,
+            timeRemaining: timeRemaining,
           }),
         )
       }
@@ -591,7 +687,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
         newAnswers[currentQuestionIndex] = selectedOption
         setAnswers(newAnswers)
 
-        // Sauvegarder dans localStorage
+        // Sauvegarder dans localStorage avec le nouvel index
         if (testId) {
           localStorage.setItem(
             `personality_test_${testId}`,
@@ -600,6 +696,25 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
               answers: newAnswers,
               lastUpdated: new Date().toISOString(),
               status: "in_progress",
+              startTime: startTime,
+              timeRemaining: timeRemaining,
+              currentQuestionIndex: index, // Utiliser le nouvel index
+            }),
+          )
+        }
+      } else {
+        // Même si aucune option n'est sélectionnée, sauvegarder le nouvel index
+        if (testId) {
+          localStorage.setItem(
+            `personality_test_${testId}`,
+            JSON.stringify({
+              questions,
+              answers,
+              lastUpdated: new Date().toISOString(),
+              status: "in_progress",
+              startTime: startTime,
+              timeRemaining: timeRemaining,
+              currentQuestionIndex: index, // Utiliser le nouvel index
             }),
           )
         }
@@ -731,6 +846,9 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
             answers,
             lastUpdated: new Date().toISOString(),
             status: "in_progress",
+            startTime: startTime,
+            timeRemaining: timeRemaining,
+            currentQuestionIndex: currentQuestionIndex, // Ajouter l'index de la question actuelle
           }),
         )
         console.log("Sauvegarde automatique effectuée")
@@ -738,7 +856,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
     }, 30000)
 
     return () => clearInterval(autoSaveInterval)
-  }, [testId, questions, answers, testCompleted, testForcedToEnd])
+  }, [testId, questions, answers, testCompleted, testForcedToEnd, startTime, timeRemaining, currentQuestionIndex])
 
   // Fonction pour afficher le message de triche détectée
   const renderCheatingDetectedMessage = () => {
@@ -795,9 +913,11 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
         <div className="flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
           <AlertCircle className="h-8 w-8 text-red-600" />
         </div>
-        <h3 className="text-2xl font-bold">Temps écoulé</h3>
+        <h3 className="text-2xl font-bold">Test complété et temps écoulé</h3>
         <p className="text-muted-foreground">
-          Le temps alloué pour ce test est écoulé. Votre candidature n'a pas pu être complétée.
+          Le temps alloué pour ce test est écoulé. Votre candidature a été enregistrée et sera
+          examinée par notre équipe. N'hésitez pas à consulter votre email, nous vous enverrons bientôt une
+          notification concernant votre acceptation ou rejet pour un entretien présentiel.
         </p>
         <Button variant="outline" onClick={() => window.history.back()}>
           Retour
@@ -881,7 +1001,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
         <div className="flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
           <CheckCircle2 className="h-8 w-8 text-green-600" />
         </div>
-        <h3 className="text-2xl font-bold">Test terminé avec succès !</h3>
+        <h3 className="text-2xl font-bold">Test terminé !</h3>
         <p className="text-muted-foreground mb-6">
           Votre candidature a été enregistrée avec succès. N'hésitez pas à consulter votre email, nous vous enverrons
           bientôt une notification concernant votre acceptation ou rejet pour un entretien présentiel.
@@ -999,26 +1119,32 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
           </div>
 
           <div className="space-y-3">
-            {currentQuestion.options.map((option, index) => (
-              <div
-                key={index}
-                className={`flex items-center p-3 rounded-md border cursor-pointer transition-colors ${
-                  selectedOption === option ? "bg-primary/10 border-primary" : "hover:bg-muted/50"
-                }`}
-                onClick={() => handleOptionSelect(option)}
-              >
-                <div className="flex-shrink-0 mr-3">
-                  <div
-                    className={`h-5 w-5 rounded-full border flex items-center justify-center ${
-                      selectedOption === option ? "border-primary" : "border-muted-foreground"
-                    }`}
-                  >
-                    {selectedOption === option && <div className="h-3 w-3 rounded-full bg-primary"></div>}
+            {currentQuestion.options.map((option, index) => {
+              // Vérifier si cette option correspond à la réponse sauvegardée
+              const isSelected =
+                selectedOption && selectedOption.text === option.text && selectedOption.score === option.score
+
+              return (
+                <div
+                  key={index}
+                  className={`flex items-center p-3 rounded-md border cursor-pointer transition-colors ${
+                    isSelected ? "bg-blue-100 border-blue-500" : "hover:bg-gray-50"
+                  }`}
+                  onClick={() => handleOptionSelect(option)}
+                >
+                  <div className="flex-shrink-0 mr-3">
+                    <div
+                      className={`h-5 w-5 rounded-full flex items-center justify-center ${
+                        isSelected ? "bg-blue-500" : "border border-gray-300"
+                      }`}
+                    >
+                      {isSelected && <div className="h-2 w-2 rounded-full bg-white"></div>}
+                    </div>
                   </div>
+                  <span className="text-sm">{option.text}</span>
                 </div>
-                <span className="text-sm">{option.text}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {error && (
@@ -1060,10 +1186,10 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
               key={index}
               className={`h-8 w-8 rounded-full flex items-center justify-center text-sm cursor-pointer transition-colors ${
                 index === currentQuestionIndex
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-blue-500 text-white"
                   : answers[index]
-                    ? "bg-primary/20 text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
               onClick={() => navigateToQuestion(index)}
             >
