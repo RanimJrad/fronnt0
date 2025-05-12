@@ -71,7 +71,7 @@ export default function Index() {
                     <p className="text-base leading-relaxed font-light tracking-wide">
                       Notre plateforme innovante vous permet de parcourir et choisir parmi des milliers d'offres
                       d'emploi, postuler en quelques clics, puis passer un test de personnalité alimenté par
-                      l'intelligence artificielle. Cette approche unique facilite la présélection des candidats, offrant
+                      l'intelligence artificielle selon le principe de Big Five. Cette approche unique facilite la présélection des candidats, offrant
                       une expérience fluide tant pour les chercheurs d'emploi que pour les recruteurs.
                     </p>
                   </div>
