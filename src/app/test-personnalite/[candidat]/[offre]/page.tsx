@@ -342,7 +342,7 @@ export default function TestPersonnalitePage({
 
   return (
     <div className="personality-test-page">
-      <Header />
+      {/* <Header /> */}
 
       <main className="personality-test-main">
         <div className="personality-test-container">

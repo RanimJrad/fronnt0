@@ -18,6 +18,9 @@ const DEPARTMENTS = [
   { id: "2", name: "Marketing" },
   { id: "3", name: "Ressources Humaines" },
   { id: "4", name: "Finance" },
+  { id: "5", name: "Education" },
+  { id: "6", name: "Santé" },
+  { id: "7", name: "autre" },
 ]
 
 const DOMAINS = {
@@ -42,6 +45,19 @@ const DOMAINS = {
     { id: "2", name: "Audit" },
     { id: "3", name: "Contrôle de Gestion" },
   ],
+  Education: [
+    { id: "1", name: "Enseignement Primaire" },
+    { id: "2", name: "Enseignement Secondaire" },
+    { id: "3", name: "Enseignement Supérieur" },
+    { id: "4", name: "Formation Professionnelle" },
+  ],
+  Santé: [
+    { id: "1", name: "Médecine Générale" },
+    { id: "2", name: "Médecine Spécialisée" },
+    { id: "3", name: "Soins Infirmiers" },
+    { id: "4", name: "Pharmacie" },
+  ],
+  autre: [{ id: "1", name: "Autre" }],
 }
 
 const POSITIONS = {
@@ -66,6 +82,19 @@ const POSITIONS = {
     { id: "2", name: "Auditeur" },
     { id: "3", name: "Contrôleur de Gestion" },
   ],
+  Education: [
+    { id: "1", name: "Enseignant" },
+    { id: "2", name: "Directeur d'Établissement" },
+    { id: "3", name: "Formateur" },
+    { id: "4", name: "Conseiller Pédagogique" },
+  ],
+  Santé: [
+    { id: "1", name: "Médecin" },
+    { id: "2", name: "Infirmier" },
+    { id: "3", name: "Pharmacien" },
+    { id: "4", name: "Technicien de Santé" },
+  ],
+  autre: [{ id: "1", name: "Autre" }],
 }
 
 const CITIES = [
@@ -228,6 +257,7 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
   // États pour les champs personnalisés
   const [customDomaine, setCustomDomaine] = useState<string>("")
   const [customPoste, setCustomPoste] = useState<string>("")
+  const [customDepartement, setCustomDepartement] = useState<string>("")
 
   // États pour les options filtrées
   const [availableDomains, setAvailableDomains] = useState<any[]>([])
@@ -269,22 +299,29 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
 
       // Vérifier si le domaine et le poste sont dans les listes prédéfinies
       if (offre.departement) {
-        const domainsForDept = DOMAINS[offre.departement as keyof typeof DOMAINS] || []
-        const positionsForDept = POSITIONS[offre.departement as keyof typeof POSITIONS] || []
-
-        setAvailableDomains(domainsForDept)
-        setAvailablePositions(positionsForDept)
-
-        // Si le domaine n'est pas dans la liste, considérer comme personnalisé
-        if (offre.domaine && offre.domaine !== "0" && !domainsForDept.some((d) => d.name === offre.domaine)) {
-          setFormData((prev) => ({ ...prev, domaine: AUTRE_OPTION }))
+        // Si le département est "autre", initialiser les champs personnalisés
+        if (offre.departement === "autre") {
+          setCustomDepartement(offre.departement)
           setCustomDomaine(offre.domaine)
-        }
-
-        // Si le poste n'est pas dans la liste, considérer comme personnalisé
-        if (offre.poste && offre.poste !== "0" && !positionsForDept.some((p) => p.name === offre.poste)) {
-          setFormData((prev) => ({ ...prev, poste: AUTRE_OPTION }))
           setCustomPoste(offre.poste)
+        } else {
+          const domainsForDept = DOMAINS[offre.departement as keyof typeof DOMAINS] || []
+          const positionsForDept = POSITIONS[offre.departement as keyof typeof POSITIONS] || []
+
+          setAvailableDomains(domainsForDept)
+          setAvailablePositions(positionsForDept)
+
+          // Si le domaine n'est pas dans la liste, considérer comme personnalisé
+          if (offre.domaine && offre.domaine !== "0" && !domainsForDept.some((d) => d.name === offre.domaine)) {
+            setFormData((prev) => ({ ...prev, domaine: AUTRE_OPTION }))
+            setCustomDomaine(offre.domaine)
+          }
+
+          // Si le poste n'est pas dans la liste, considérer comme personnalisé
+          if (offre.poste && offre.poste !== "0" && !positionsForDept.some((p) => p.name === offre.poste)) {
+            setFormData((prev) => ({ ...prev, poste: AUTRE_OPTION }))
+            setCustomPoste(offre.poste)
+          }
         }
       }
     }
@@ -292,7 +329,7 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
 
   // Mettre à jour les domaines et postes disponibles lorsque le département change
   useEffect(() => {
-    if (formData.departement) {
+    if (formData.departement && formData.departement !== "autre") {
       setAvailableDomains(DOMAINS[formData.departement as keyof typeof DOMAINS] || [])
       setAvailablePositions(POSITIONS[formData.departement as keyof typeof POSITIONS] || [])
     } else {
@@ -332,12 +369,11 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
     if (name === "poste" && value !== AUTRE_OPTION) {
       setCustomPoste("")
     }
-
-    // Si le département change, réinitialiser domaine et poste
-    if (name === "departement") {
-      setFormData((prev) => ({ ...prev, domaine: "", poste: "" }))
+    if (name === "departement" && value !== "autre") {
+      setCustomDepartement("")
       setCustomDomaine("")
       setCustomPoste("")
+      setFormData((prev) => ({ ...prev, domaine: "", poste: "" }))
     }
   }
 
@@ -385,8 +421,19 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
       const dataToSend = {
         ...formData,
         // Utiliser les valeurs personnalisées si "Autre" est sélectionné
-        domaine: formData.domaine === AUTRE_OPTION ? customDomaine : formData.domaine,
-        poste: formData.poste === AUTRE_OPTION ? customPoste : formData.poste,
+        departement: formData.departement === "autre" ? customDepartement : formData.departement,
+        domaine:
+          formData.departement === "autre"
+            ? customDomaine
+            : formData.domaine === AUTRE_OPTION
+              ? customDomaine
+              : formData.domaine,
+        poste:
+          formData.departement === "autre"
+            ? customPoste
+            : formData.poste === AUTRE_OPTION
+              ? customPoste
+              : formData.poste,
         // Assurez-vous que les champs sont au format attendu par le serveur
         dateExpiration: formData.dateExpiration, // Format YYYY-MM-DD
         // Convertir matchingAttachment en valeur numérique pour le champ matching
@@ -642,85 +689,138 @@ export function OffreEditDialog({ offre, isOpen, onClose, onOffreUpdated }: Offr
                               {dept.name}
                             </option>
                           ))}
+                          <option value="autre">Autre</option>
                         </select>
                       </div>
 
-                      {/* Domaine */}
-                      <div className={styles.formGroup}>
-                        <label htmlFor="domaine" className={styles.label}>
-                          Domaine
-                        </label>
-                        <select
-                          id="domaine"
-                          value={formData.domaine}
-                          onChange={(e) => handleSelectChange("domaine", e.target.value)}
-                          disabled={!formData.departement}
-                          className={styles.select}
-                        >
-                          <option value="">Sélectionner un domaine</option>
-                          {availableDomains.map((domain) => (
-                            <option key={domain.id} value={domain.name}>
-                              {domain.name}
-                            </option>
-                          ))}
-                          <option value={AUTRE_OPTION}>Autre</option>
-                        </select>
-                      </div>
+                      {/* Si "autre" est sélectionné comme département, afficher les champs personnalisés */}
+                      {formData.departement === "autre" ? (
+                        <>
+                          {/* Champ personnalisé pour le département */}
+                          <div className={styles.formGroup}>
+                            <label htmlFor="customDepartement" className={styles.label}>
+                              Précisez le département
+                            </label>
+                            <input
+                              id="customDepartement"
+                              value={customDepartement}
+                              onChange={(e) => handleCustomInputChange(e, setCustomDepartement)}
+                              placeholder="Entrez votre département personnalisé"
+                              className={styles.input}
+                              required
+                            />
+                          </div>
 
-                      {/* Champ personnalisé pour le domaine */}
-                      {formData.domaine === AUTRE_OPTION && (
-                        <div className={styles.formGroup}>
-                          <label htmlFor="customDomaine" className={styles.label}>
-                            Précisez le domaine
-                          </label>
-                          <input
-                            id="customDomaine"
-                            value={customDomaine}
-                            onChange={(e) => handleCustomInputChange(e, setCustomDomaine)}
-                            placeholder="Entrez votre domaine personnalisé"
-                            className={styles.input}
-                            required
-                          />
-                        </div>
-                      )}
+                          {/* Champ personnalisé pour le domaine */}
+                          <div className={styles.formGroup}>
+                            <label htmlFor="customDomaine" className={styles.label}>
+                              Précisez le domaine
+                            </label>
+                            <input
+                              id="customDomaine"
+                              value={customDomaine}
+                              onChange={(e) => handleCustomInputChange(e, setCustomDomaine)}
+                              placeholder="Entrez votre domaine personnalisé"
+                              className={styles.input}
+                              required
+                            />
+                          </div>
 
-                      {/* Poste */}
-                      <div className={styles.formGroup}>
-                        <label htmlFor="poste" className={styles.label}>
-                          Poste
-                        </label>
-                        <select
-                          id="poste"
-                          value={formData.poste}
-                          onChange={(e) => handleSelectChange("poste", e.target.value)}
-                          disabled={!formData.departement}
-                          className={styles.select}
-                        >
-                          <option value="">Sélectionner un poste</option>
-                          {availablePositions.map((position) => (
-                            <option key={position.id} value={position.name}>
-                              {position.name}
-                            </option>
-                          ))}
-                          <option value={AUTRE_OPTION}>Autre</option>
-                        </select>
-                      </div>
+                          {/* Champ personnalisé pour le poste */}
+                          <div className={styles.formGroup}>
+                            <label htmlFor="customPoste" className={styles.label}>
+                              Précisez le poste
+                            </label>
+                            <input
+                              id="customPoste"
+                              value={customPoste}
+                              onChange={(e) => handleCustomInputChange(e, setCustomPoste)}
+                              placeholder="Entrez votre poste personnalisé"
+                              className={styles.input}
+                              required
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Domaine (affiché uniquement si un département standard est sélectionné) */}
+                          <div className={styles.formGroup}>
+                            <label htmlFor="domaine" className={styles.label}>
+                              Domaine
+                            </label>
+                            <select
+                              id="domaine"
+                              value={formData.domaine}
+                              onChange={(e) => handleSelectChange("domaine", e.target.value)}
+                              disabled={!formData.departement}
+                              className={styles.select}
+                            >
+                              <option value="">Sélectionner un domaine</option>
+                              {availableDomains.map((domain) => (
+                                <option key={domain.id} value={domain.name}>
+                                  {domain.name}
+                                </option>
+                              ))}
+                              <option value={AUTRE_OPTION}>Autre</option>
+                            </select>
+                          </div>
 
-                      {/* Champ personnalisé pour le poste */}
-                      {formData.poste === AUTRE_OPTION && (
-                        <div className={styles.formGroup}>
-                          <label htmlFor="customPoste" className={styles.label}>
-                            Précisez le poste
-                          </label>
-                          <input
-                            id="customPoste"
-                            value={customPoste}
-                            onChange={(e) => handleCustomInputChange(e, setCustomPoste)}
-                            placeholder="Entrez votre poste personnalisé"
-                            className={styles.input}
-                            required
-                          />
-                        </div>
+                          {/* Champ personnalisé pour le domaine */}
+                          {formData.domaine === AUTRE_OPTION && (
+                            <div className={styles.formGroup}>
+                              <label htmlFor="customDomaine" className={styles.label}>
+                                Précisez le domaine
+                              </label>
+                              <input
+                                id="customDomaine"
+                                value={customDomaine}
+                                onChange={(e) => handleCustomInputChange(e, setCustomDomaine)}
+                                placeholder="Entrez votre domaine personnalisé"
+                                className={styles.input}
+                                required
+                              />
+                            </div>
+                          )}
+
+                          {/* Poste */}
+                          <div className={styles.formGroup}>
+                            <label htmlFor="poste" className={styles.label}>
+                              Poste
+                            </label>
+                            <select
+                              id="poste"
+                              value={formData.poste}
+                              onChange={(e) => handleSelectChange("poste", e.target.value)}
+                              disabled={!formData.departement}
+                              className={styles.select}
+                            >
+                              <option value="">Sélectionner un poste</option>
+                              {availablePositions.map((position) => (
+                                <option key={position.id} value={position.name}>
+                                  {position.name}
+                                </option>
+                              ))}
+                              <option value={AUTRE_OPTION}>Autre</option>
+                            </select>
+                          </div>
+
+                          {/* Champ personnalisé pour le poste */}
+                          {formData.poste === AUTRE_OPTION && (
+                            <div className={styles.formGroup}>
+                              <label htmlFor="customPoste" className={styles.label}>
+                                Précisez le poste
+                              </label>
+                              <input
+                                id="customPoste"
+                                value={customPoste}
+                                onChange={(e) => handleCustomInputChange(e, setCustomPoste)}
+                                placeholder="Entrez votre poste personnalisé"
+                                className={styles.input}
+                                required
+                              />
+                            </div>
+                          )}
+                        </>
                       )}
 
                       {/* Société */}

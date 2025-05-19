@@ -205,11 +205,8 @@ export function CandidatesByMonth() {
               </ResponsiveContainer>
             </ChartContainer>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm font-medium text-gray-700">Total Candidats</p>
-                <p className="text-xl font-bold text-gray-900">{totalCandidates}</p>
-              </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm font-medium text-gray-700">Moyenne Mensuelle</p>
                 <p className="text-xl font-bold text-gray-900">{averagePerMonth}</p>

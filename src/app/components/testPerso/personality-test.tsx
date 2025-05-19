@@ -9,6 +9,9 @@ import TestSecurity from "./test-security"
 // Ajouter ces imports en haut du fichier
 import { useState, useEffect, useRef, useCallback } from "react"
 
+// Ajouter ces imports en haut du fichier (après les imports existants)
+import { X } from "lucide-react"
+
 interface Option {
   text: string
   score: number
@@ -50,6 +53,11 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
   // Ajouter ces états dans le composant PersonalityTest
   const [testId, setTestId] = useState<string | null>(null)
   const [cheatingDetected, setCheatingDetected] = useState(false)
+
+  // Ajouter ces états dans le composant PersonalityTest (avec les autres états)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
+  const [showValidationModal, setShowValidationModal] = useState(false)
+  const [unansweredQuestions, setUnansweredQuestions] = useState<number[]>([])
 
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
@@ -502,7 +510,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
     }, 0)
   }
 
-  // Modifier la fonction goToNextQuestion pour sauvegarder l'état
+  // Remplacer la fonction goToNextQuestion par celle-ci
   const goToNextQuestion = () => {
     if (!selectedOption) {
       setError("Veuillez sélectionner une réponse.")
@@ -536,11 +544,29 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
       // Move to next question
       setCurrentQuestionIndex(currentQuestionIndex + 1)
     } else {
-      // Calculate final score from all answers
-      const finalScore = newAnswers.reduce((total, answer) => total + (answer ? answer.score : 0), 0)
-      setTotalScore(finalScore)
-      submitQcmTest()
+      // Check if all questions have been answered
+      const missingAnswers = newAnswers
+        .map((answer, index) => (answer === null ? index : -1))
+        .filter((index) => index !== -1)
+
+      if (missingAnswers.length > 0) {
+        setUnansweredQuestions(missingAnswers)
+        setShowValidationModal(true)
+        return
+      }
+
+      // Show confirmation modal
+      setShowConfirmationModal(true)
     }
+  }
+
+  // Ajouter cette fonction après goToNextQuestion
+  const handleConfirmSubmit = () => {
+    // Calculate final score from all answers
+    const finalScore = answers.reduce((total, answer) => total + (answer ? answer.score : 0), 0)
+    setTotalScore(finalScore)
+    setShowConfirmationModal(false)
+    submitQcmTest()
   }
 
   const goToPreviousQuestion = () => {
@@ -1147,7 +1173,6 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
         </div>
         <h3 className="text-2xl font-bold">Temps écoulé</h3>
 
-
         <p className="text-muted-foreground">
           Le temps alloué pour ce test est écoulé. Votre candidature a été enregistrée avec les réponses que vous avez
           fournies. N'hésitez pas à consulter votre email, nous vous enverrons bientôt une notification concernant votre
@@ -1431,6 +1456,83 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
           ))}
         </div>
       </div>
+      {/* Ajouter ces composants à la fin du return, juste avant la dernière balise fermante </TestSecurity>
+// Ajouter ceci juste avant la dernière balise fermante </TestSecurity> */}
+      {showConfirmationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full overflow-hidden">
+            <div className="bg-amber-50 border-b border-amber-100 px-6 py-4 flex items-center gap-3">
+              <AlertCircle className="h-6 w-6 text-amber-500" />
+              <h3 className="text-lg font-semibold text-amber-800">Terminer le test</h3>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-gray-600">
+                Êtes-vous sûr de vouloir terminer le test ? Vous ne pourrez pas modifier vos réponses après la
+                soumission.
+              </p>
+            </div>
+            <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowConfirmationModal(false)}>
+                Annuler
+              </Button>
+              <Button className="bg-amber-600 hover:bg-amber-700" onClick={handleConfirmSubmit}>
+                Terminer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showValidationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full overflow-hidden relative">
+            <button
+              onClick={() => setShowValidationModal(false)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              aria-label="Fermer"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Fermer</span>
+            </button>
+            <div className="bg-red-50 border-b border-red-100 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-6 w-6 text-red-500" />
+                <h3 className="text-lg font-semibold text-red-800">Questions non répondues</h3>
+              </div>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-gray-600 mb-4">
+                Veuillez répondre à toutes les questions avant de terminer le test. Il reste{" "}
+                <span className="font-semibold text-red-600">{unansweredQuestions.length}</span> question(s) sans
+                réponse.
+              </p>
+
+              <div className="bg-red-50 p-4 rounded-md">
+                <h4 className="font-medium text-red-800 mb-2">Questions à compléter :</h4>
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                  {unansweredQuestions.map((index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className="border-red-200 bg-white text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        navigateToQuestion(index)
+                        setShowValidationModal(false)
+                      }}
+                    >
+                      Question {index + 1}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t bg-gray-50 flex justify-end">
+              <Button onClick={() => setShowValidationModal(false)}>Compris</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </TestSecurity>
   )
 }

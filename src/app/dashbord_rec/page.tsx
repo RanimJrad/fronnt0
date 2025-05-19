@@ -9,6 +9,7 @@ import { UpcomingInterviews } from "../components/bi/upcoming-interviews"
 import { WelcomeBanner } from "../components/recruteur/welcome-banner_rec"
 import { DashboardSidebarRec } from "../components/recruteur/dashboard-sidebar_rec"
 import { DashboardHeaderRec } from "../components/recruteur/dashboard-header_rec"
+import { TrendChart } from "../components/bi/trend-chart"
 
 export default function RecruiterDashboard() {
   const router = useRouter()
@@ -106,32 +107,39 @@ export default function RecruiterDashboard() {
             )}
 
             {/* Stats Cards - Fixed height and consistent design */}
-            <div className="grid gap-6">
-              <h2 className="text-xl font-semibold text-blue-700 dark:text-blue-400">Vue d'ensemble</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Vue d'ensemble</h2>
               <StatsCards isAdmin={false} />
             </div>
 
+            {/* Tendances Chart - Repositionné comme dans la capture d'écran */}
+            <div className="mt-6">
+              <TrendChart />
+            </div>
+
             {/* Two Column Layout for Charts and Upcoming Interviews */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
               <div className="lg:col-span-2">
-                <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400 mb-4">Statistiques</h2>
-                <div className="h-full">
-                  <DashboardCharts isAdmin={false} />
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">Analyses détaillées</h2>
+                <div className="bg-white rounded-lg p-5">
+                  <DetailedStats isAdmin={false} />
                 </div>
               </div>
 
               <div className="lg:col-span-1">
-                <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400 mb-4">Entretiens</h2>
-                <div className="h-full">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">Entretiens</h2>
+                <div className="bg-white rounded-lg p-5">
                   <UpcomingInterviews />
                 </div>
               </div>
             </div>
 
             {/* Detailed Stats Section */}
-            <div className="grid gap-6 mt-8">
-              <h2 className="text-xl font-semibold text-blue-700 dark:text-blue-400">Analyses détaillées</h2>
-              <DetailedStats isAdmin={false} />
+            <div className="mt-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Statistiques</h2>
+              <div className="bg-white rounded-lg p-5">
+                <DashboardCharts isAdmin={false} />
+              </div>
             </div>
           </div>
         </div>

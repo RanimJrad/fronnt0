@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { BarChart, LineChart, DonutChart } from "@/components/ui/chart1"
+import { BarChart, DonutChart } from "@/components/ui/chart1"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
@@ -26,6 +26,7 @@ export function DashboardCharts({ isAdmin = false }) {
   const [candidatsParMois, setCandidatsParMois] = useState<LineChartData[]>([])
   const [candidatsParNiveau, setCandidatsParNiveau] = useState<ChartData[]>([])
   const [candidatsParOffre, setCandidatsParOffre] = useState<ChartData[]>([])
+  const [candidatsParNiveauExp, setCandidatsParNiveauExp] = useState<ChartData[]>([])
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -79,10 +80,33 @@ export function DashboardCharts({ isAdmin = false }) {
 
         if (moisRes.ok) {
           const moisData = await moisRes.json()
+          // Créer un tableau avec tous les mois de l'année
+          const tousLesMois = [
+            { name: "Jan", Candidats: 0 },
+            { name: "Fév", Candidats: 0 },
+            { name: "Mar", Candidats: 0 },
+            { name: "Avr", Candidats: 0 },
+            { name: "Mai", Candidats: 0 },
+            { name: "Juin", Candidats: 0 },
+            { name: "Juil", Candidats: 0 },
+            { name: "Août", Candidats: 0 },
+            { name: "Sep", Candidats: 0 },
+            { name: "Oct", Candidats: 0 },
+            { name: "Nov", Candidats: 0 },
+            { name: "Déc", Candidats: 0 },
+          ]
+
+          // Mettre à jour avec les données réelles
           if (Array.isArray(moisData) && moisData.length > 0) {
-            setCandidatsParMois(moisData)
+            moisData.forEach((item) => {
+              const index = tousLesMois.findIndex((mois) => mois.name === item.name)
+              if (index !== -1) {
+                tousLesMois[index].Candidats = item.Candidats
+              }
+            })
+            setCandidatsParMois(tousLesMois)
           } else {
-            setCandidatsParMois([])
+            setCandidatsParMois(tousLesMois)
           }
         } else {
           setCandidatsParMois([])
@@ -90,6 +114,29 @@ export function DashboardCharts({ isAdmin = false }) {
       } catch (e) {
         console.error("Erreur lors du chargement des candidats par mois:", e)
         setCandidatsParMois([])
+      }
+
+      // Charger les données de niveau d'expérience
+      try {
+        const niveauExpRes = await fetch("http://127.0.0.1:8000/api/recruteur/candidats-par-niveauExpRec", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (niveauExpRes.ok) {
+          const niveauExpData = await niveauExpRes.json()
+          if (Array.isArray(niveauExpData) && niveauExpData.length > 0) {
+            setCandidatsParNiveauExp(niveauExpData)
+          } else {
+            setCandidatsParNiveauExp([])
+          }
+        } else {
+          setCandidatsParNiveauExp([])
+        }
+      } catch (e) {
+        console.error("Erreur lors du chargement des candidats par niveau d'expérience:", e)
+        setCandidatsParNiveauExp([])
       }
 
       // Charger les données de niveau d'études
@@ -184,8 +231,9 @@ export function DashboardCharts({ isAdmin = false }) {
             >
               Par Département
             </TabsTrigger>
+            {/* modifier tendence par niveauExpérience */}
             <TabsTrigger value="tendances" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-              Tendances
+              Niveau d'Expérience
             </TabsTrigger>
             <TabsTrigger value="niveau" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
               Niveau d'Études
@@ -238,14 +286,13 @@ export function DashboardCharts({ isAdmin = false }) {
                   <div className="flex h-full items-center justify-center">
                     <p className="text-red-500">Erreur lors du chargement des données</p>
                   </div>
-                ) : candidatsParMois.length > 0 ? (
-                  <LineChart
-                    data={candidatsParMois}
+                ) : candidatsParNiveauExp.length > 0 ? (
+                  <DonutChart
+                    data={candidatsParNiveauExp}
                     index="name"
-                    categories={["Candidats"]}
-                    colors={["blue"]}
+                    category="value"
                     valueFormatter={(value) => `${value} candidats`}
-                    yAxisWidth={48}
+                    colors={["blue", "purple", "green", "orange", "red"]}
                     className="mt-4"
                   />
                 ) : (
@@ -278,7 +325,7 @@ export function DashboardCharts({ isAdmin = false }) {
                       index="name"
                       category="value"
                       valueFormatter={(value) => `${value} candidats`}
-                      colors={["blue", "indigo", "slate", "sky", "navy"]}
+                      colors={["blue", "purple", "black", "navy", "indigo", "royalblue"]}
                       className="mt-4"
                     />
                   </>

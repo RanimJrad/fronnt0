@@ -23,6 +23,9 @@ const DEPARTMENTS = [
   { id: "2", name: "Marketing" },
   { id: "3", name: "Ressources Humaines" },
   { id: "4", name: "Finance" },
+  { id: "5", name: "Education" },
+  { id: "6", name: "Santé" },
+  { id: "7", name: "autre" },
 ]
 
 const DOMAINS = {
@@ -47,6 +50,19 @@ const DOMAINS = {
     { id: "2", name: "Audit" },
     { id: "3", name: "Contrôle de Gestion" },
   ],
+  Education: [
+    { id: "1", name: "Enseignement Primaire" },
+    { id: "2", name: "Enseignement Secondaire" },
+    { id: "3", name: "Enseignement Supérieur" },
+    { id: "4", name: "Formation Professionnelle" },
+  ],
+  Santé: [
+    { id: "1", name: "Médecine Générale" },
+    { id: "2", name: "Médecine Spécialisée" },
+    { id: "3", name: "Soins Infirmiers" },
+    { id: "4", name: "Pharmacie" },
+  ],
+  autre: [{ id: "1", name: "Autre" }],
 }
 
 const POSITIONS = {
@@ -71,6 +87,19 @@ const POSITIONS = {
     { id: "2", name: "Auditeur" },
     { id: "3", name: "Contrôleur de Gestion" },
   ],
+  Education: [
+    { id: "1", name: "Enseignant" },
+    { id: "2", name: "Directeur d'Établissement" },
+    { id: "3", name: "Formateur" },
+    { id: "4", name: "Conseiller Pédagogique" },
+  ],
+  Santé: [
+    { id: "1", name: "Médecin" },
+    { id: "2", name: "Infirmier" },
+    { id: "3", name: "Pharmacien" },
+    { id: "4", name: "Technicien de Santé" },
+  ],
+  autre: [{ id: "1", name: "Autre" }],
 }
 
 const CITIES = [
@@ -173,6 +202,7 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
   // État pour les champs personnalisés
   const [customDomaine, setCustomDomaine] = useState<string>("")
   const [customPoste, setCustomPoste] = useState<string>("")
+  const [customDepartement, setCustomDepartement] = useState<string>("")
 
   const [formData, setFormData] = useState({
     departement: "",
@@ -255,7 +285,7 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
 
   // Update available domains and positions when department changes
   useEffect(() => {
-    if (formData.departement) {
+    if (formData.departement && formData.departement !== "autre") {
       setAvailableDomains(DOMAINS[formData.departement as keyof typeof DOMAINS] || [])
       setAvailablePositions(POSITIONS[formData.departement as keyof typeof POSITIONS] || [])
     } else {
@@ -264,13 +294,16 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
     }
 
     // Réinitialiser les valeurs personnalisées et les sélections lorsque le département change
-    setCustomDomaine("")
-    setCustomPoste("")
-    setFormData((prev) => ({
-      ...prev,
-      domaine: "",
-      poste: "",
-    }))
+    if (formData.departement !== "autre") {
+      setCustomDomaine("")
+      setCustomPoste("")
+      setCustomDepartement("")
+      setFormData((prev) => ({
+        ...prev,
+        domaine: "",
+        poste: "",
+      }))
+    }
   }, [formData.departement])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -286,6 +319,11 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
       setCustomDomaine("")
     }
     if (name === "poste" && value !== AUTRE_OPTION) {
+      setCustomPoste("")
+    }
+    if (name === "departement" && value !== "autre") {
+      setCustomDepartement("")
+      setCustomDomaine("")
       setCustomPoste("")
     }
   }
@@ -340,11 +378,24 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
       let value = formData[field as keyof typeof formData]
 
       // Special handling for custom fields
-      if (field === "domaine" && formData.domaine === AUTRE_OPTION) {
-        value = customDomaine
+      if (field === "departement" && formData.departement === "autre") {
+        value = customDepartement
       }
-      if (field === "poste" && formData.poste === AUTRE_OPTION) {
-        value = customPoste
+
+      if (field === "domaine") {
+        if (formData.departement === "autre") {
+          value = customDomaine
+        } else if (formData.domaine === AUTRE_OPTION) {
+          value = customDomaine
+        }
+      }
+
+      if (field === "poste") {
+        if (formData.departement === "autre") {
+          value = customPoste
+        } else if (formData.poste === AUTRE_OPTION) {
+          value = customPoste
+        }
       }
 
       if (!value || value.trim() === "") {
@@ -423,8 +474,19 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
       const dataToSubmit = {
         ...formData,
         // Use the values directly from formData instead of editor refs
-        domaine: formData.domaine === AUTRE_OPTION ? customDomaine : formData.domaine,
-        poste: formData.poste === AUTRE_OPTION ? customPoste : formData.poste,
+        departement: formData.departement === "autre" ? customDepartement : formData.departement,
+        domaine:
+          formData.departement === "autre"
+            ? customDomaine
+            : formData.domaine === AUTRE_OPTION
+              ? customDomaine
+              : formData.domaine,
+        poste:
+          formData.departement === "autre"
+            ? customPoste
+            : formData.poste === AUTRE_OPTION
+              ? customPoste
+              : formData.poste,
         // Use the values from the input fields
         description: formData.description,
         responsabilite: formData.responsabilite,
@@ -483,6 +545,7 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
       })
       setCustomDomaine("")
       setCustomPoste("")
+      setCustomDepartement("")
 
       onOffreAdded()
 
@@ -632,90 +695,148 @@ export function AddOffreForm({ onOffreAdded }: { onOffreAdded: () => void }) {
                           {dept.name}
                         </option>
                       ))}
+                      <option value="autre">Autre</option>
                     </select>
                     {hasError("departement") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
                   </div>
 
-                  {/* Domaine */}
-                  <div className={styles.formGroup}>
-                    <label htmlFor="domaine" className={styles.label}>
-                      Domaine
-                    </label>
-                    <select
-                      id="domaine"
-                      value={formData.domaine}
-                      onChange={(e) => handleSelectChange("domaine", e.target.value)}
-                      disabled={!formData.departement}
-                      className={getInputClassName("domaine", styles.select)}
-                    >
-                      <option value="">Sélectionner un domaine</option>
-                      {availableDomains.map((domain) => (
-                        <option key={domain.id} value={domain.name}>
-                          {domain.name}
-                        </option>
-                      ))}
-                      <option value={AUTRE_OPTION}>Autre</option>
-                    </select>
-                    {hasError("domaine") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
-                  </div>
+                  {/* Si "autre" est sélectionné comme département, afficher les champs personnalisés */}
+                  {formData.departement === "autre" ? (
+                    <>
+                      {/* Champ personnalisé pour le département */}
+                      <div className={styles.formGroup}>
+                        <label htmlFor="customDepartement" className={styles.label}>
+                          Précisez le département
+                        </label>
+                        <input
+                          id="customDepartement"
+                          value={customDepartement}
+                          onChange={(e) => handleCustomInputChange(e, setCustomDepartement)}
+                          placeholder="Entrez votre département personnalisé"
+                          className={getInputClassName("departement", styles.input)}
+                          required
+                        />
+                        {hasError("departement") && (
+                          <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>
+                        )}
+                      </div>
 
-                  {/* Champ personnalisé pour le domaine */}
-                  {formData.domaine === AUTRE_OPTION && (
-                    <div className={styles.formGroup}>
-                      <label htmlFor="customDomaine" className={styles.label}>
-                        Précisez le domaine
-                      </label>
-                      <input
-                        id="customDomaine"
-                        value={customDomaine}
-                        onChange={(e) => handleCustomInputChange(e, setCustomDomaine)}
-                        placeholder="Entrez votre domaine personnalisé"
-                        className={getInputClassName("domaine", styles.input)}
-                        required
-                      />
-                      {hasError("domaine") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
-                    </div>
-                  )}
+                      {/* Champ personnalisé pour le domaine */}
+                      <div className={styles.formGroup}>
+                        <label htmlFor="customDomaine" className={styles.label}>
+                          Précisez le domaine
+                        </label>
+                        <input
+                          id="customDomaine"
+                          value={customDomaine}
+                          onChange={(e) => handleCustomInputChange(e, setCustomDomaine)}
+                          placeholder="Entrez votre domaine personnalisé"
+                          className={getInputClassName("domaine", styles.input)}
+                          required
+                        />
+                        {hasError("domaine") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
+                      </div>
 
-                  {/* Poste */}
-                  <div className={styles.formGroup}>
-                    <label htmlFor="poste" className={styles.label}>
-                      Poste
-                    </label>
-                    <select
-                      id="poste"
-                      value={formData.poste}
-                      onChange={(e) => handleSelectChange("poste", e.target.value)}
-                      disabled={!formData.departement}
-                      className={getInputClassName("poste", styles.select)}
-                    >
-                      <option value="">Sélectionner un poste</option>
-                      {availablePositions.map((position) => (
-                        <option key={position.id} value={position.name}>
-                          {position.name}
-                        </option>
-                      ))}
-                      <option value={AUTRE_OPTION}>Autre</option>
-                    </select>
-                    {hasError("poste") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
-                  </div>
+                      {/* Champ personnalisé pour le poste */}
+                      <div className={styles.formGroup}>
+                        <label htmlFor="customPoste" className={styles.label}>
+                          Précisez le poste
+                        </label>
+                        <input
+                          id="customPoste"
+                          value={customPoste}
+                          onChange={(e) => handleCustomInputChange(e, setCustomPoste)}
+                          placeholder="Entrez votre poste personnalisé"
+                          className={getInputClassName("poste", styles.input)}
+                          required
+                        />
+                        {hasError("poste") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Domaine (affiché uniquement si un département standard est sélectionné) */}
+                      <div className={styles.formGroup}>
+                        <label htmlFor="domaine" className={styles.label}>
+                          Domaine
+                        </label>
+                        <select
+                          id="domaine"
+                          value={formData.domaine}
+                          onChange={(e) => handleSelectChange("domaine", e.target.value)}
+                          disabled={!formData.departement}
+                          className={getInputClassName("domaine", styles.select)}
+                        >
+                          <option value="">Sélectionner un domaine</option>
+                          {availableDomains.map((domain) => (
+                            <option key={domain.id} value={domain.name}>
+                              {domain.name}
+                            </option>
+                          ))}
+                          <option value={AUTRE_OPTION}>Autre</option>
+                        </select>
+                        {hasError("domaine") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
+                      </div>
 
-                  {/* Champ personnalisé pour le poste */}
-                  {formData.poste === AUTRE_OPTION && (
-                    <div className={styles.formGroup}>
-                      <label htmlFor="customPoste" className={styles.label}>
-                        Précisez le poste
-                      </label>
-                      <input
-                        id="customPoste"
-                        value={customPoste}
-                        onChange={(e) => handleCustomInputChange(e, setCustomPoste)}
-                        placeholder="Entrez votre poste personnalisé"
-                        className={getInputClassName("poste", styles.input)}
-                        required
-                      />
-                      {hasError("poste") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
-                    </div>
+                      {/* Champ personnalisé pour le domaine */}
+                      {formData.domaine === AUTRE_OPTION && (
+                        <div className={styles.formGroup}>
+                          <label htmlFor="customDomaine" className={styles.label}>
+                            Précisez le domaine
+                          </label>
+                          <input
+                            id="customDomaine"
+                            value={customDomaine}
+                            onChange={(e) => handleCustomInputChange(e, setCustomDomaine)}
+                            placeholder="Entrez votre domaine personnalisé"
+                            className={getInputClassName("domaine", styles.input)}
+                            required
+                          />
+                          {hasError("domaine") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
+                        </div>
+                      )}
+
+                      {/* Poste (affiché uniquement si un département standard est sélectionné) */}
+                      <div className={styles.formGroup}>
+                        <label htmlFor="poste" className={styles.label}>
+                          Poste
+                        </label>
+                        <select
+                          id="poste"
+                          value={formData.poste}
+                          onChange={(e) => handleSelectChange("poste", e.target.value)}
+                          disabled={!formData.departement}
+                          className={getInputClassName("poste", styles.select)}
+                        >
+                          <option value="">Sélectionner un poste</option>
+                          {availablePositions.map((position) => (
+                            <option key={position.id} value={position.name}>
+                              {position.name}
+                            </option>
+                          ))}
+                          <option value={AUTRE_OPTION}>Autre</option>
+                        </select>
+                        {hasError("poste") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
+                      </div>
+
+                      {/* Champ personnalisé pour le poste */}
+                      {formData.poste === AUTRE_OPTION && (
+                        <div className={styles.formGroup}>
+                          <label htmlFor="customPoste" className={styles.label}>
+                            Précisez le poste
+                          </label>
+                          <input
+                            id="customPoste"
+                            value={customPoste}
+                            onChange={(e) => handleCustomInputChange(e, setCustomPoste)}
+                            placeholder="Entrez votre poste personnalisé"
+                            className={getInputClassName("poste", styles.input)}
+                            required
+                          />
+                          {hasError("poste") && <p className="text-xs text-red-500 mt-1">Ce champ est obligatoire</p>}
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Société */}
