@@ -109,7 +109,7 @@ export function CandidatesByDepartment() {
         <div className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-lg font-medium text-gray-900">Candidats par Département</CardTitle>
-            <CardDescription className="text-sm text-gray-500">Répartition géographique des candidats</CardDescription>
+            <CardDescription className="text-sm text-gray-500">Répartition des candidats par département </CardDescription>
           </div>
         </div>
       </CardHeader>

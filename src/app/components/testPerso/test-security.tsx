@@ -277,13 +277,27 @@ export default function TestSecurity({
   return (
     <div className="test-security-container">
       {showWarning && (
-        <Alert
-          variant="destructive"
-          className="test-security-warning mb-4 fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md"
-        >
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{warningMessage}</AlertDescription>
-        </Alert>
+        <div className="fixed inset-0 flex items-start justify-center pt-[15%] z-[9999] pointer-events-none">
+          <div className="animate-bounce-in">
+            <Alert
+              variant="destructive"
+              className="test-security-warning shadow-lg border-2 border-red-500 bg-red-50 max-w-md w-full pointer-events-auto"
+            >
+              <div className="flex items-start gap-3">
+                <div className="bg-red-100 p-2 rounded-full">
+                  <AlertCircle className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg text-red-700 mb-1">Attention !</h3>
+                  <AlertDescription className="text-red-700 font-medium text-base">{warningMessage}</AlertDescription>
+                  <p className="text-red-600 text-sm mt-2">
+                    Cette action est considérée comme une tentative de triche et sera signalée.
+                  </p>
+                </div>
+              </div>
+            </Alert>
+          </div>
+        </div>
       )}
 
       {/* Si trop de violations, on affiche le message de triche */}

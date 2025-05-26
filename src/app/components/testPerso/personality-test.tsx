@@ -62,7 +62,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ candidatId, offreId, 
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [startTime, setStartTime] = useState<number | null>(null)
-  const [totalTime] = useState(10 * 60) // 10 minutes in seconds
+  const [totalTime] = useState(7 * 60) // 7 minutes in seconds
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Use refs to track initialization state and prevent multiple API calls
