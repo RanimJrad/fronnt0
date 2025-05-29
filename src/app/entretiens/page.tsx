@@ -427,6 +427,13 @@ export default function EntretiensPage() {
 
       setInterviews(updatedInterviews)
 
+      // Mettre à jour les dates du calendrier avec la nouvelle date
+      const updatedCalendarDates = [
+        ...new Set([...updatedInterviews.map((interview) => format(new Date(interview.date_heure), "yyyy-MM-dd"))]),
+      ].map((dateStr) => new Date(dateStr))
+
+      setCalendarDates(updatedCalendarDates)
+
       // Fermer la boîte de dialogue avant de filtrer pour éviter l'erreur
       setIsRescheduleOpen(false)
 

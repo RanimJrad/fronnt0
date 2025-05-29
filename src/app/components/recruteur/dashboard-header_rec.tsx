@@ -34,18 +34,35 @@ export function DashboardHeaderRec() {
       .catch((error) => console.error("Erreur lors de la récupération des infos utilisateur :", error))
   }, [])
 
-  const handleNotificationClick = (notification: any) => {
-    markAsRead(notification.id)
+  const handleNotificationClick = async (notification: any) => {
+    try {
+      // Marquer comme lu et attendre la confirmation
+      const success = await markAsRead(notification.id)
 
-    // Handle navigation based on notification type
-    if (notification.type === "offer_validated") {
-      window.location.href = `/offre`
-    } else if (notification.type === "new_application") {
-      window.location.href = `/candidat`
-    } else if (notification.type === "account_activated") {
-      window.location.href = `/dashbord_rec`
-    } else if (notification.type === "offer_rejected") {
-      window.location.href = `/offre`
+      if (!success) {
+        console.error("Erreur lors du marquage de la notification comme lue")
+        // Optionnel : afficher un toast d'erreur
+      }
+
+      // Navigation basée sur le type de notification
+      switch (notification.type) {
+        case "offer_validated":
+          window.location.href = `/offre`
+          break
+        case "new_application":
+          window.location.href = `/candidat`
+          break
+        case "account_activated":
+          window.location.href = `/dashbord_rec`
+          break
+        case "offer_rejected":
+          window.location.href = `/offre`
+          break
+        default:
+          console.warn(`Type de notification non géré: ${notification.type}`)
+      }
+    } catch (error) {
+      console.error("Erreur lors du traitement de la notification:", error)
     }
   }
 

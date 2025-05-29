@@ -155,6 +155,18 @@ export default function Header() {
                 Contact
               </Link>
             </div>
+            <div className="mt-auto flex flex-col gap-4">
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/register" onClick={() => setIsOpen(false)}>
+                  S'inscrire
+                </Link>
+              </Button>
+              <Button className="w-full" asChild>
+                <Link href="/login" onClick={() => setIsOpen(false)}>
+                  Se connecter
+                </Link>
+              </Button>
+            </div>
 
             
           </div>

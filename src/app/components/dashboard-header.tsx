@@ -34,18 +34,35 @@ export function DashboardHeader() {
       .catch((error) => console.error("Erreur lors de la récupération des infos utilisateur :", error))
   }, [])
 
-  const handleNotificationClick = (notification: any) => {
-    markAsRead(notification.id)
+  const handleNotificationClick = async (notification: any) => {
+    try {
+      // Marquer comme lu et attendre la confirmation
+      const success = await markAsRead(notification.id)
 
-    // Handle navigation based on notification type
-    if (notification.type === "new_job_offer") {
-      window.location.href = `/offre_admin`
-    } else if (notification.type === "new_recruiter") {
-      window.location.href = `/employees`
-    } else if (notification.type === "new_contact") {
-      window.location.href = `/contact_admin`
-    } else if (notification.type === "new_testimonial") {
-      window.location.href = `/temoiniage_admin`
+      if (!success) {
+        console.error("Erreur lors du marquage de la notification comme lue")
+        // Optionnel : afficher un toast d'erreur
+      }
+
+      // Navigation basée sur le type de notification
+      switch (notification.type) {
+        case "new_job_offer":
+          window.location.href = `/offre_admin`
+          break
+        case "new_recruiter":
+          window.location.href = `/employees`
+          break
+        case "new_contact":
+          window.location.href = `/contact_admin`
+          break
+        case "new_testimonial":
+          window.location.href = `/temoiniage_admin`
+          break
+        default:
+          console.warn(`Type de notification non géré: ${notification.type}`)
+      }
+    } catch (error) {
+      console.error("Erreur lors du traitement de la notification:", error)
     }
   }
 

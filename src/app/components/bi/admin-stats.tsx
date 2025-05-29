@@ -27,7 +27,7 @@ export function AdminStats() {
     recruteurs: { value: 0, percentage: 0 },
   })
   const [selectedPeriod, setSelectedPeriod] = useState<"week" | "month" | "year">("week")
-  const [periodTitle, setPeriodTitle] = useState("des 7 derniers jours")
+  const [periodTitle, setPeriodTitle] = useState("de cette semaine")
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -237,7 +237,7 @@ export function AdminStats() {
 
     // Mettre à jour le titre de la période en fonction de la période sélectionnée
     if (selectedPeriod === "week") {
-      setPeriodTitle("des 7 derniers jours")
+      setPeriodTitle("de cette semaine ")
     } else if (selectedPeriod === "month") {
       setPeriodTitle("par mois (année complète)")
     } else {

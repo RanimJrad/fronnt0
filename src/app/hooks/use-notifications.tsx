@@ -216,7 +216,7 @@ export function useNotifications() {
 
   // Fallback polling mechanism if WebSocket fails
   const startPolling = useCallback(() => {
-    const interval = setInterval(fetchNotifications, 30000) // Poll every 30 seconds
+    const interval = setInterval(fetchNotifications, 9000) // Poll every 30 seconds
     return () => clearInterval(interval)
   }, [fetchNotifications])
 
