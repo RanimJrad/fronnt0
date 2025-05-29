@@ -184,7 +184,7 @@ export function TrendChart() {
         }
       case "week":
         return {
-          title: "Tendances sur 7 jours",
+          title: "Tendances des 7 derniers jours",
           description: "Évolution des candidats et offres par semaine",
         }
       case "month":
